@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <meta name="apple-mobile-web-app-title" content="Jeeru">
 <meta name="description" content="Jeeru — a private chat just for two.">
 <title>Jeeru</title>
@@ -198,6 +198,31 @@
   #emojiBar span.picked{ animation:pickPulse .4s var(--spring); }
   @keyframes pickPulse{ 0%{ transform:scale(1);} 40%{ transform:scale(1.7);} 100%{ transform:scale(1);} }
 
+  /* ---------- IN-APP PUSH TOAST (iOS/Instagram-style banner) ---------- */
+  #pushToast{
+    position:fixed; left:50%; top:calc(10px + env(safe-area-inset-top));
+    width:calc(100% - 24px); max-width:536px;
+    transform:translate(-50%,-140%); opacity:0;
+    z-index:200; display:flex; align-items:center; gap:10px;
+    padding:11px 14px; border-radius:18px;
+    background:var(--panel-light); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+    box-shadow:0 10px 30px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12);
+    cursor:pointer; pointer-events:none;
+    transition:transform .45s var(--spring), opacity .3s var(--ease);
+  }
+  body.dark #pushToast{ background:var(--panel-dark); }
+  #pushToast.show{ transform:translate(-50%,0); opacity:1; pointer-events:auto; }
+  #pushToast .toastAvatar{
+    width:34px; height:34px; border-radius:10px; flex-shrink:0; object-fit:cover;
+    box-shadow:0 2px 6px rgba(0,0,0,0.18);
+  }
+  #pushToast .toastBody{ flex:1; min-width:0; }
+  #pushToast .toastTitle{ font-size:13.5px; font-weight:700; letter-spacing:-0.01em; display:flex; align-items:center; gap:5px; }
+  #pushToast .toastTitle .toastNow{ font-weight:400; color:var(--sub-light); font-size:11.5px; }
+  #pushToast .toastMsg{ font-size:13px; color:var(--text-light); opacity:.88; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  body.dark #pushToast .toastMsg{ color:var(--text-dark); }
+  #pushToast:active{ transform:translate(-50%,0) scale(0.97); }
+
   /* typing indicator */
   .typing-bubble{
     background:var(--bubble-in-light); border-radius:20px; border-bottom-left-radius:6px; padding:12px 16px;
@@ -364,6 +389,14 @@
     <span data-e="😢">😢</span><span data-e="🙏">🙏</span><span data-e="👍">👍</span>
   </div>
 
+  <div id="pushToast">
+    <img class="toastAvatar" id="toastAvatar" alt="">
+    <div class="toastBody">
+      <div class="toastTitle" id="toastTitle">Jeeru<span class="toastNow">now</span></div>
+      <div class="toastMsg" id="toastMsg"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -390,7 +423,10 @@
   let ME = null;          // my phone number
   let OTHER = null;       // their phone number
   let darkMode = false;
-  let lastRenderedIds = new Set();
+  let lastRenderedIds = [];   // ordered message ids currently reflected in the DOM (for diff-based render)
+  let rowElMap = new Map();   // message id -> its row element (for diff-based render)
+  let emptyStateEl = null;
+  let typingRowEl = null;
   let pollTimer = null;
   let typingTimeout = null;
   let activeEmojiTarget = null;
@@ -403,6 +439,7 @@
   const attachBtn = $('attachBtn'), fileInput = $('fileInput'), mediaPreviewBar = $('mediaPreviewBar');
   const mediaPreviewThumb = $('mediaPreviewThumb'), mediaPreviewName = $('mediaPreviewName'), mediaPreviewSub = $('mediaPreviewSub'), mediaPreviewCancel = $('mediaPreviewCancel');
   const lightbox = $('lightbox'), lightboxImg = $('lightboxImg'), lightboxVideo = $('lightboxVideo'), lightboxClose = $('lightboxClose');
+  const pushToast = $('pushToast'), toastAvatar = $('toastAvatar'), toastTitle = $('toastTitle'), toastMsg = $('toastMsg');
   let pendingMedia = null; // { type:'image'|'video', data:dataURL, label }
   let igScriptLoaded = false, igScriptLoading = false;
 
@@ -511,6 +548,7 @@
 
       loadAndRender();
       pollTimer = setInterval(loadAndRender, POLL_MS);
+      setupPushNotifications();
     }, 420);
   }
 
@@ -711,8 +749,54 @@
     }
   }
 
-  // ---------- RENDER ----------
+  // ---------- RENDER (diff-based: only touch DOM nodes that actually changed) ----------
+  // Messages only ever get APPENDED or have their `seen`/`reactions` fields
+  // mutated in place (see server.js) — the id order never changes and rows
+  // are never removed. So on every poll we diff the new list against what's
+  // already in the DOM (tracked via rowElMap/lastRenderedIds): unchanged
+  // rows are left completely untouched (no re-render → no animation
+  // replay), only genuinely new messages get created, and only the
+  // seen/reactions of existing rows get patched in place.
+  function reactionsSig(reactions){
+    const keys = Object.keys(reactions || {});
+    return keys.map(k => k + ':' + reactions[k]).sort().join(',');
+  }
+
+  function updateRowMeta(el, m, isLast){
+    const mine = m.from === ME;
+    const wrap = el.querySelector('.bubble-wrap');
+    const timeEl = el.querySelector('.meta');
+
+    // reactions — only rebuild the little chip row if it actually changed
+    const sig = reactionsSig(m.reactions);
+    if(el.dataset.reactSig !== sig){
+      const oldR = wrap.querySelector('.reactions');
+      if(oldR) oldR.remove();
+      const keys = Object.keys(m.reactions || {});
+      if(keys.length){
+        const rDiv = document.createElement('div');
+        rDiv.className = 'reactions';
+        keys.forEach(who => {
+          const chip = document.createElement('div');
+          chip.className = 'reaction-chip';
+          chip.textContent = m.reactions[who];
+          rDiv.appendChild(chip);
+        });
+        wrap.insertBefore(rDiv, timeEl);
+      }
+      el.dataset.reactSig = sig;
+    }
+
+    // time / seen-delivered label
+    let label = new Date(m.ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    if(mine && isLast){
+      label += m.seen ? ' · Seen' : ' · Delivered';
+    }
+    if(timeEl.textContent !== label) timeEl.textContent = label;
+  }
+
   let renderInFlight = false;
+  let hasLoadedOnce = false;
   async function loadAndRender(forceScroll){
     // if a previous poll's fetch is still in flight (slow network), skip
     // this tick rather than letting two loads race and stomp on each other
@@ -728,15 +812,43 @@
 
     const wasNearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 120;
 
-    messagesEl.innerHTML = '';
+    // the typing row always sits at the very end — pull it out before
+    // diffing message rows, we re-add it (if still relevant) afterwards
+    if(typingRowEl){ typingRowEl.remove(); typingRowEl = null; }
+
     if(list.length === 0){
-      const empty = document.createElement('div');
-      empty.id = 'emptyState';
-      empty.innerHTML = '<div class="big">👋</div>Say hi to start the conversation.';
-      messagesEl.appendChild(empty);
+      if(rowElMap.size || !emptyStateEl){
+        messagesEl.innerHTML = '';
+        rowElMap.clear();
+        lastRenderedIds = [];
+        emptyStateEl = document.createElement('div');
+        emptyStateEl.id = 'emptyState';
+        emptyStateEl.innerHTML = '<div class="big">👋</div>Say hi to start the conversation.';
+        messagesEl.appendChild(emptyStateEl);
+      }
     } else {
-      let lastDay = '';
-      list.forEach((m, idx) => {
+      if(emptyStateEl){ emptyStateEl.remove(); emptyStateEl = null; }
+
+      const newIds = list.map(m => m.id);
+      let common = 0;
+      const max = Math.min(lastRenderedIds.length, newIds.length);
+      while(common < max && lastRenderedIds[common] === newIds[common]) common++;
+
+      if(common < lastRenderedIds.length){
+        // ids diverged before the end of what we'd previously rendered —
+        // shouldn't normally happen (messages are append-only), but fall
+        // back to a full rebuild rather than risk stale/misplaced nodes
+        messagesEl.innerHTML = '';
+        rowElMap.clear();
+        common = 0;
+      }
+
+      let lastDay = common > 0 ? new Date(list[common - 1].ts).toDateString() : '';
+
+      // append only the genuinely new messages
+      let newFromOther = null;
+      for(let idx = common; idx < list.length; idx++){
+        const m = list[idx];
         const day = new Date(m.ts).toDateString();
         if(day !== lastDay){
           const sep = document.createElement('div');
@@ -746,8 +858,31 @@
           lastDay = day;
         }
         const nextIsSameSender = idx < list.length - 1 && list[idx+1].from === m.from && (new Date(list[idx+1].ts).toDateString() === day);
-        messagesEl.appendChild(renderRow(m, idx === list.length - 1, list, !nextIsSameSender));
-      });
+        const row = renderRow(m, idx === list.length - 1, list, !nextIsSameSender);
+        messagesEl.appendChild(row);
+        rowElMap.set(m.id, row);
+        if(m.from === OTHER) newFromOther = m;
+      }
+
+      // poll-based fallback toast (works even without push permission) —
+      // only after the initial history load, and only for messages from
+      // the other person, so we never toast our own sends or the first load
+      if(hasLoadedOnce && newFromOther && document.visibilityState === 'visible'){
+        const otherName = MEMBERS[OTHER].name;
+        showInAppToast(otherName, creativeToastBody(otherName));
+      }
+
+      // patch existing rows whose seen/reactions may have changed — this
+      // also re-labels the previously-last message now that it might no
+      // longer be the last one (so "Delivered"/"Seen" moves correctly)
+      for(let idx = 0; idx < common; idx++){
+        const m = list[idx];
+        const el = rowElMap.get(m.id);
+        if(el) updateRowMeta(el, m, idx === list.length - 1);
+      }
+
+      lastRenderedIds = newIds;
+
       // mark other's messages as seen (atomic server-side update — no
       // read-modify-write race with a message being sent at the same time)
       if(list.some(m => m.from === OTHER && !m.seen)){
@@ -758,15 +893,16 @@
     // typing indicator
     const otherTyping = typing[OTHER] && (Date.now() - typing[OTHER] < 3000);
     if(otherTyping){
-      const row = document.createElement('div');
-      row.className = 'row them';
-      row.innerHTML = '<div class="bubble-wrap"><div class="typing-bubble"><span></span><span></span><span></span></div></div>';
-      messagesEl.appendChild(row);
+      typingRowEl = document.createElement('div');
+      typingRowEl.className = 'row them';
+      typingRowEl.innerHTML = '<div class="bubble-wrap"><div class="typing-bubble"><span></span><span></span><span></span></div></div>';
+      messagesEl.appendChild(typingRowEl);
     }
 
     if(wasNearBottom || forceScroll){
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
+    hasLoadedOnce = true;
   }
 
   function formatDay(ts){
@@ -781,6 +917,9 @@
     const mine = m.from === ME;
     const row = document.createElement('div');
     row.className = 'row ' + (mine ? 'me' : 'them');
+
+    row.dataset.id = m.id;
+    row.dataset.reactSig = reactionsSig(m.reactions);
 
     const wrap = document.createElement('div');
     wrap.className = 'bubble-wrap';
@@ -870,6 +1009,91 @@
 
   function markSeenLoop(){
     // handled inside loadAndRender via polling
+  }
+
+  // ---------- NOTIFICATIONS (push + in-app toast) ----------
+  // Same playful lines as the server uses for push payloads — kept here too
+  // so the poll-based fallback toast (see loadAndRender) has its own supply
+  // without needing a network round trip just for copy.
+  const TOAST_TEMPLATES = [
+    "{name} ne kuch bheja hai 👀",
+    "{name} ka naya message aaya hai 💬",
+    "Ek naya message {name} ki taraf se ✨",
+    "📩 {name} se message aaya hai",
+    "{name} soch rahe the tumhare baare mein... ya bas message hi bheja 😄",
+    "{name} ki taraf se ek surprise 🎁",
+    "Tumhara phone abhi hila — {name} ne likha hai kuch",
+    "{name}: naya message wait kar raha hai 👋"
+  ];
+  function creativeToastBody(name){
+    const t = TOAST_TEMPLATES[Math.floor(Math.random() * TOAST_TEMPLATES.length)];
+    return t.replace('{name}', name);
+  }
+
+  let toastTimer = null;
+  function showInAppToast(title, body){
+    toastAvatar.src = LOGO;
+    toastTitle.firstChild.textContent = title + ' ';
+    toastMsg.textContent = body;
+    pushToast.classList.add('show');
+    vibrate(8);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => pushToast.classList.remove('show'), 3600);
+  }
+  pushToast.addEventListener('click', () => {
+    pushToast.classList.remove('show');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+
+  function urlBase64ToUint8Array(base64String){
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for(let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+
+  async function setupPushNotifications(){
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try{
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      if(Notification.permission === 'denied') return;
+
+      let permission = Notification.permission;
+      if(permission === 'default'){
+        permission = await Notification.requestPermission();
+      }
+      if(permission !== 'granted') return;
+
+      let sub = await reg.pushManager.getSubscription();
+      if(!sub){
+        const res = await fetch('/api/push/vapid-public-key');
+        const { publicKey } = await res.json();
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+      }
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ who: ME, subscription: sub })
+      });
+    }catch(e){
+      console.warn('push setup skipped:', e.message);
+    }
+  }
+
+  // the service worker hands push events back to us when the app is
+  // already open & focused, so we can show the in-app banner instead of a
+  // duplicate OS notification
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if(event.data && event.data.type === 'jeeru-push'){
+        showInAppToast(event.data.title, event.data.body);
+      }
+    });
   }
 
 })();
