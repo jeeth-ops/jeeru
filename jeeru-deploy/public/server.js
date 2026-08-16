@@ -237,6 +237,60 @@ app.post('/api/messages/seen', async (req, res) => {
   }
 });
 
+// Edit a message's text, atomically. Only the original sender may edit,
+// and only text messages (media captions can be edited too, via `text`).
+app.post('/api/messages/edit', async (req, res) => {
+  const { id, who, text } = req.body || {};
+  if (!id || !who || typeof text !== 'string') return res.status(400).json({ error: 'id, who and text required' });
+  try {
+    const messages = await withLock(() => {
+      const data = loadData();
+      const list = getMessages(data);
+      const target = list.find(m => m.id === id);
+      if (target && target.from === who && !target.deleted) {
+        target.text = text;
+        target.edited = true;
+        target.editedAt = Date.now();
+        data[MSG_KEY] = JSON.stringify(list);
+        saveData(data);
+      }
+      return list;
+    });
+    res.json({ ok: true, messages });
+  } catch (e) {
+    res.status(500).json({ error: 'save failed' });
+  }
+});
+
+// Soft-delete a message, atomically. Only the original sender may delete.
+// Content is wiped but the row stays (as "this message was deleted") so
+// timeline/order and reactions bookkeeping stay simple.
+app.post('/api/messages/delete', async (req, res) => {
+  const { id, who } = req.body || {};
+  if (!id || !who) return res.status(400).json({ error: 'id and who required' });
+  try {
+    const messages = await withLock(() => {
+      const data = loadData();
+      const list = getMessages(data);
+      const target = list.find(m => m.id === id);
+      if (target && target.from === who) {
+        target.deleted = true;
+        target.text = '';
+        delete target.mediaType;
+        delete target.mediaData;
+        delete target.audioData;
+        delete target.audioDuration;
+        data[MSG_KEY] = JSON.stringify(list);
+        saveData(data);
+      }
+      return list;
+    });
+    res.json({ ok: true, messages });
+  } catch (e) {
+    res.status(500).json({ error: 'save failed' });
+  }
+});
+
 // Toggle a reaction on one message, atomically
 app.post('/api/messages/react', async (req, res) => {
   const { id, who, emoji } = req.body || {};
