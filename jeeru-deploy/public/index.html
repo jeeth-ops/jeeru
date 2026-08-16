@@ -288,6 +288,15 @@
   body.dark #mediaPreviewCancel{ background:var(--bubble-in-dark); }
   #mediaPreviewCancel:active{ transform:scale(0.85); }
 
+  #editBar{
+    display:flex; align-items:center; gap:10px; padding:8px 14px; background:var(--panel-light);
+    border-top:0.5px solid var(--sep-light); animation:riseUp .25s var(--spring); font-size:13.5px; font-weight:600; color:var(--blue);
+  }
+  body.dark #editBar{ background:var(--panel-dark); border-color:var(--sep-dark); }
+  #editBarLabel{ flex:1; }
+  #editBarCancel{ width:24px; height:24px; border-radius:50%; border:none; background:var(--bubble-in-light); color:var(--sub-light); cursor:pointer; }
+  body.dark #editBarCancel{ background:var(--bubble-in-dark); }
+
   /* media inside bubbles */
   .bubble.media{ padding:4px; background:transparent !important; box-shadow:none; }
   .bubble.media img, .bubble.media video{
@@ -329,6 +338,160 @@
   .ig-fallback .ig-open:active{ transform:scale(0.93); }
 
   ::-webkit-scrollbar{ width:0; }
+
+  /* ---------- KEBAB / MORE MENU BUTTON ---------- */
+  #moreBtn{
+    width:34px; height:34px; border-radius:50%; border:none; cursor:pointer;
+    background:var(--bubble-in-light); font-size:16px; display:flex; align-items:center; justify-content:center;
+    transition:transform .25s var(--spring), background .3s; margin-left:4px;
+  }
+  body.dark #moreBtn{ background:var(--bubble-in-dark); }
+  #moreBtn:active{ transform:scale(0.85); }
+  .dot-offline{ width:6px; height:6px; border-radius:50%; background:#8E8E93; display:inline-block; }
+
+  /* ---------- PINNED BANNER ---------- */
+  #pinnedBanner{
+    display:none; align-items:center; gap:8px; padding:8px 14px; cursor:pointer;
+    background:var(--panel-light); border-bottom:0.5px solid var(--sep-light);
+    animation:riseUp .3s var(--spring);
+  }
+  body.dark #pinnedBanner{ background:var(--panel-dark); border-color:var(--sep-dark); }
+  #pinnedBanner .pin-ico{ font-size:14px; flex-shrink:0; }
+  #pinnedBanner .pin-body{ flex:1; min-width:0; }
+  #pinnedBanner .pin-label{ font-size:10.5px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:.04em; }
+  #pinnedBanner .pin-text{ font-size:13px; color:var(--text-light); opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  body.dark #pinnedBanner .pin-text{ color:var(--text-dark); }
+  #pinnedBanner .pin-unpin{ flex-shrink:0; width:24px; height:24px; border-radius:50%; border:none; background:var(--bubble-in-light); color:var(--sub-light); font-size:12px; cursor:pointer; }
+  body.dark #pinnedBanner .pin-unpin{ background:var(--bubble-in-dark); }
+  .bubble.pinned-highlight{ animation:pinFlash 1.1s var(--ease); }
+  @keyframes pinFlash{ 0%,100%{ box-shadow:0 1px 1px rgba(0,0,0,0.04);} 30%{ box-shadow:0 0 0 4px rgba(10,132,255,0.35);} }
+  .pin-badge{ font-size:10px; margin-right:3px; opacity:.8; }
+
+  /* ---------- BOTTOM ACTION SHEET (long-press menu, wallpaper, settings) ---------- */
+  #sheetOverlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:150; display:none;
+    animation:fadeIn .2s ease;
+  }
+  #sheetOverlay.show{ display:block; }
+  .sheet{
+    position:fixed; left:50%; bottom:0; transform:translate(-50%, 110%); width:100%; max-width:560px;
+    background:var(--panel-light); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+    border-radius:20px 20px 0 0; padding:8px 0 calc(10px + env(safe-area-inset-bottom));
+    box-shadow:0 -10px 30px rgba(0,0,0,0.25); z-index:151; transition:transform .35s var(--spring);
+    max-height:80vh; overflow-y:auto;
+  }
+  body.dark .sheet{ background:var(--panel-dark); }
+  .sheet.show{ transform:translate(-50%, 0); }
+  .sheet-handle{ width:36px; height:4px; border-radius:2px; background:var(--sep-light); margin:6px auto 10px; }
+  body.dark .sheet-handle{ background:var(--sep-dark); }
+  .sheet-title{ font-size:12px; font-weight:700; color:var(--sub-light); text-transform:uppercase; letter-spacing:.05em; padding:2px 20px 8px; }
+  .sheet-item{
+    display:flex; align-items:center; gap:14px; padding:13px 20px; font-size:16px; cursor:pointer;
+    transition:background .15s;
+  }
+  .sheet-item:active{ background:var(--bubble-in-light); }
+  body.dark .sheet-item:active{ background:var(--bubble-in-dark); }
+  .sheet-item .ic{ font-size:19px; width:22px; text-align:center; flex-shrink:0; }
+  .sheet-item.danger{ color:#FF453A; }
+  .sheet-item .sub{ font-size:12px; color:var(--sub-light); margin-top:1px; }
+  .sheet-sep{ height:0.5px; background:var(--sep-light); margin:4px 0; }
+  body.dark .sheet-sep{ background:var(--sep-dark); }
+  .sheet-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 20px; }
+  .sheet-toggle{
+    width:46px; height:28px; border-radius:14px; background:var(--sep-light); position:relative; cursor:pointer;
+    flex-shrink:0; transition:background .25s;
+  }
+  .sheet-toggle.on{ background:#30D158; }
+  .sheet-toggle::after{
+    content:''; position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3); transition:transform .25s var(--spring);
+  }
+  .sheet-toggle.on::after{ transform:translateX(18px); }
+
+  /* wallpaper grid inside sheet */
+  .wallpaper-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:6px 20px 14px; }
+  .wallpaper-swatch{
+    aspect-ratio:1; border-radius:14px; cursor:pointer; border:2.5px solid transparent; position:relative;
+    display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff;
+  }
+  .wallpaper-swatch.selected{ border-color:var(--blue); }
+  .wallpaper-swatch.custom-upload{ background:var(--bubble-in-light); color:var(--sub-light); font-size:20px; }
+  body.dark .wallpaper-swatch.custom-upload{ background:var(--bubble-in-dark); }
+
+  /* ---------- APP LOCK ---------- */
+  #lockScreen{
+    position:fixed; inset:0; z-index:300; display:none; flex-direction:column; align-items:center; justify-content:center;
+    background:var(--bg-light); padding:32px;
+  }
+  body.dark #lockScreen{ background:var(--bg-dark); }
+  #lockScreen.show{ display:flex; }
+  #lockScreen .lock-ico{ font-size:44px; margin-bottom:6px; }
+  #lockScreen .lock-title{ font-size:20px; font-weight:700; margin-bottom:22px; }
+  .pin-dots{ display:flex; gap:16px; margin-bottom:26px; }
+  .pin-dot{ width:14px; height:14px; border-radius:50%; border:1.5px solid var(--sub-light); transition:background .15s, transform .15s; }
+  .pin-dot.filled{ background:var(--blue); border-color:var(--blue); transform:scale(1.1); }
+  .pin-dot.shake-dot{ animation:shake .4s; }
+  .pin-pad{ display:grid; grid-template-columns:repeat(3,64px); gap:16px; justify-content:center; }
+  .pin-key{
+    width:64px; height:64px; border-radius:50%; border:none; background:var(--bubble-in-light); font-size:22px;
+    font-weight:500; cursor:pointer; transition:transform .12s var(--spring), background .15s; color:var(--text-light);
+  }
+  body.dark .pin-key{ background:var(--bubble-in-dark); color:var(--text-dark); }
+  .pin-key:active{ transform:scale(0.9); background:var(--sep-light); }
+  .pin-key.ghost{ background:transparent; box-shadow:none; }
+  #lockBiometric{ margin-top:22px; background:none; border:none; color:var(--blue); font-size:14.5px; font-weight:600; cursor:pointer; padding:10px; }
+  #lockError{ min-height:18px; font-size:13px; color:#FF453A; margin-bottom:4px; }
+  #lockSetupNote{ font-size:12.5px; color:var(--sub-light); margin-top:16px; text-align:center; max-width:260px; }
+
+  /* ---------- VOICE MESSAGES ---------- */
+  #micBtn{
+    width:34px; height:34px; border-radius:50%; border:none; background:var(--bubble-in-light); color:var(--blue);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; margin-bottom:2px;
+    transition:transform .2s var(--spring), background .2s, color .2s;
+  }
+  body.dark #micBtn{ background:var(--bubble-in-dark); }
+  #micBtn.recording{ background:#FF453A; color:#fff; transform:scale(1.08); animation:recPulse 1s infinite; }
+  @keyframes recPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,69,58,0.4);} 50%{ box-shadow:0 0 0 8px rgba(255,69,58,0);} }
+  #recordBar{
+    display:none; align-items:center; gap:10px; padding:8px 16px; background:var(--panel-light);
+    border-top:0.5px solid var(--sep-light); animation:riseUp .25s var(--spring);
+  }
+  body.dark #recordBar{ background:var(--panel-dark); border-color:var(--sep-dark); }
+  #recordBar .rec-dot{ width:10px; height:10px; border-radius:50%; background:#FF453A; animation:pulse 1s infinite; flex-shrink:0; }
+  #recordBar .rec-time{ font-size:14.5px; font-weight:600; font-variant-numeric:tabular-nums; }
+  #recordBar .rec-hint{ flex:1; font-size:12.5px; color:var(--sub-light); text-align:center; }
+  #recordBar .rec-cancel{ font-size:13px; color:#FF453A; font-weight:600; background:none; border:none; cursor:pointer; }
+
+  .voice-bubble{ display:flex; align-items:center; gap:8px; padding:8px 12px !important; min-width:170px; }
+  .voice-play{
+    width:30px; height:30px; border-radius:50%; border:none; flex-shrink:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:12px;
+  }
+  .row.me .voice-play{ background:rgba(255,255,255,0.25); color:#fff; }
+  .row.them .voice-play{ background:var(--blue); color:#fff; }
+  .voice-wave{ flex:1; height:22px; display:flex; align-items:center; gap:2px; }
+  .voice-wave span{ width:2.5px; border-radius:2px; background:currentColor; opacity:.55; }
+  .row.me .voice-wave{ color:#fff; }
+  .row.them .voice-wave{ color:var(--blue); }
+  .voice-wave.playing span{ animation:waveBounce 0.8s ease-in-out infinite; }
+  @keyframes waveBounce{ 0%,100%{ transform:scaleY(0.4);} 50%{ transform:scaleY(1);} }
+  .voice-dur{ font-size:11px; opacity:.85; flex-shrink:0; }
+
+  /* ---------- EDITED / DELETED labels ---------- */
+  .edited-tag{ font-size:10.5px; opacity:.65; margin-left:3px; }
+  .deleted-bubble{ font-style:italic; opacity:.65; display:flex; align-items:center; gap:5px; }
+
+  /* ---------- CONFETTI / HEART BURST ---------- */
+  #fxLayer{ position:fixed; inset:0; z-index:250; pointer-events:none; overflow:hidden; }
+  .confetti-piece{ position:absolute; top:-20px; border-radius:2px; will-change:transform, opacity; }
+  .heart-piece{ position:absolute; will-change:transform, opacity; }
+
+  /* custom emoji entry in reaction bar */
+  #emojiBar .custom-emoji-slot{
+    width:26px; height:26px; border-radius:50%; background:var(--bubble-in-light); display:flex; align-items:center;
+    justify-content:center; font-size:14px; cursor:pointer; color:var(--sub-light); flex-shrink:0;
+  }
+  body.dark #emojiBar .custom-emoji-slot{ background:var(--bubble-in-dark); }
 </style>
 </head>
 <body>
@@ -354,9 +517,26 @@
       <div id="navSub"><span class="dot-live"></span>just us two</div>
     </div>
     <button id="themeToggle">🌙</button>
+    <button id="moreBtn">⋯</button>
+  </div>
+
+  <div id="pinnedBanner">
+    <div class="pin-ico">📌</div>
+    <div class="pin-body">
+      <div class="pin-label">Pinned</div>
+      <div class="pin-text" id="pinnedText"></div>
+    </div>
+    <button class="pin-unpin" id="pinnedUnpin">✕</button>
   </div>
 
   <div id="messages" style="display:none;"></div>
+
+  <div id="recordBar">
+    <span class="rec-dot"></span>
+    <span class="rec-time" id="recTime">0:00</span>
+    <span class="rec-hint">Chhodo bhejne ke liye · upar slide karo cancel</span>
+    <button class="rec-cancel" id="recCancel">Cancel</button>
+  </div>
 
   <div id="mediaPreviewBar" style="display:none;">
     <div id="mediaPreviewThumb"></div>
@@ -367,11 +547,20 @@
     <button id="mediaPreviewCancel">✕</button>
   </div>
 
+  <div id="editBar" style="display:none;">
+    <div id="editBarLabel">✏️ Editing message</div>
+    <button id="editBarCancel">✕</button>
+  </div>
+  <input type="file" id="wallpaperFileInput" accept="image/*" style="display:none;">
+
   <div id="inputbar" style="display:none;">
     <button id="attachBtn" title="Photo or video">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
     </button>
     <input type="file" id="fileInput" accept="image/*,video/*" style="display:none;">
+    <button id="micBtn" title="Voice message">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
     <textarea id="msgInput" rows="1" placeholder="Message"></textarea>
     <button id="sendBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12L19 5L15 19L11 13L5 12Z" fill="white"/></svg>
@@ -387,7 +576,24 @@
   <div id="emojiBar">
     <span data-e="❤️">❤️</span><span data-e="😂">😂</span><span data-e="😮">😮</span>
     <span data-e="😢">😢</span><span data-e="🙏">🙏</span><span data-e="👍">👍</span>
+    <span data-e="🎉">🎉</span>
+    <div class="custom-emoji-slot" id="customEmojiSlot" title="Custom reaction">+</div>
   </div>
+
+  <div id="sheetOverlay"></div>
+  <div class="sheet" id="sheet"></div>
+
+  <div id="lockScreen">
+    <div class="lock-ico">🔒</div>
+    <div class="lock-title" id="lockTitle">Jeeru Locked</div>
+    <div id="lockError"></div>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-pad" id="pinPad"></div>
+    <button id="lockBiometric" style="display:none;">Use Face/Touch ID</button>
+    <div id="lockSetupNote" style="display:none;"></div>
+  </div>
+
+  <div id="fxLayer"></div>
 
   <div id="pushToast">
     <img class="toastAvatar" id="toastAvatar" alt="">
@@ -423,23 +629,35 @@
   let ME = null;          // my phone number
   let OTHER = null;       // their phone number
   let darkMode = false;
+  let userSetTheme = false; // becomes true once user manually toggles, so we stop following system theme
   let lastRenderedIds = [];   // ordered message ids currently reflected in the DOM (for diff-based render)
   let rowElMap = new Map();   // message id -> its row element (for diff-based render)
   let emptyStateEl = null;
   let typingRowEl = null;
   let pollTimer = null;
+  let presenceTimer = null;
   let typingTimeout = null;
   let activeEmojiTarget = null;
+  let pinnedId = null;
+  let unreadCount = 0;
 
   const $ = (id) => document.getElementById(id);
   const login = $('login'), phoneInput = $('phoneInput'), loginBtn = $('loginBtn'), loginError = $('loginError');
-  const navbar = $('navbar'), navName = $('navName'), navSub = $('navSub'), navAvatar = $('navAvatar'), themeToggle = $('themeToggle');
+  const navbar = $('navbar'), navName = $('navName'), navSub = $('navSub'), navAvatar = $('navAvatar'), themeToggle = $('themeToggle'), moreBtn = $('moreBtn');
   const messagesEl = $('messages'), inputbar = $('inputbar'), msgInput = $('msgInput'), sendBtn = $('sendBtn');
   const emojiBar = $('emojiBar');
   const attachBtn = $('attachBtn'), fileInput = $('fileInput'), mediaPreviewBar = $('mediaPreviewBar');
   const mediaPreviewThumb = $('mediaPreviewThumb'), mediaPreviewName = $('mediaPreviewName'), mediaPreviewSub = $('mediaPreviewSub'), mediaPreviewCancel = $('mediaPreviewCancel');
   const lightbox = $('lightbox'), lightboxImg = $('lightboxImg'), lightboxVideo = $('lightboxVideo'), lightboxClose = $('lightboxClose');
   const pushToast = $('pushToast'), toastAvatar = $('toastAvatar'), toastTitle = $('toastTitle'), toastMsg = $('toastMsg');
+  const pinnedBanner = $('pinnedBanner'), pinnedText = $('pinnedText'), pinnedUnpin = $('pinnedUnpin');
+  const sheetOverlay = $('sheetOverlay'), sheet = $('sheet');
+  const lockScreen = $('lockScreen'), lockTitle = $('lockTitle'), lockError = $('lockError'), pinDots = $('pinDots'), pinPad = $('pinPad'), lockBiometric = $('lockBiometric'), lockSetupNote = $('lockSetupNote');
+  const micBtn = $('micBtn'), recordBar = $('recordBar'), recTime = $('recTime'), recCancel = $('recCancel');
+  const fxLayer = $('fxLayer');
+  const customEmojiSlot = $('customEmojiSlot');
+  const editBar = $('editBar'), editBarCancel = $('editBarCancel');
+  const wallpaperFileInput = $('wallpaperFileInput');
   let pendingMedia = null; // { type:'image'|'video', data:dataURL, label }
   let igScriptLoaded = false, igScriptLoading = false;
 
@@ -549,16 +767,50 @@
       loadAndRender();
       pollTimer = setInterval(loadAndRender, POLL_MS);
       setupPushNotifications();
+      loadWallpaper();
+      heartbeatPresence();
+      pollPresence();
+      presenceTimer = setInterval(() => { heartbeatPresence(); pollPresence(); }, PRESENCE_MS);
     }, 420);
   }
 
-  // ---------- THEME ----------
-  themeToggle.addEventListener('click', () => {
-    darkMode = !darkMode;
+  // ---------- THEME (auto dark mode, follows system unless user overrides) ----------
+  const systemDarkMQ = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+
+  function applyTheme(isDark){
+    darkMode = isDark;
     document.body.classList.toggle('dark', darkMode);
     themeToggle.textContent = darkMode ? '☀️' : '🌙';
+  }
+
+  function initTheme(){
+    const saved = localStorage.getItem('jeeru-theme'); // 'dark' | 'light' | null(=auto)
+    if(saved === 'dark' || saved === 'light'){
+      userSetTheme = true;
+      applyTheme(saved === 'dark');
+    } else {
+      applyTheme(systemDarkMQ ? systemDarkMQ.matches : false);
+    }
+  }
+  initTheme();
+  if(systemDarkMQ){
+    const onSystemChange = (e) => { if(!userSetTheme) applyTheme(e.matches); };
+    if(systemDarkMQ.addEventListener) systemDarkMQ.addEventListener('change', onSystemChange);
+    else if(systemDarkMQ.addListener) systemDarkMQ.addListener(onSystemChange);
+  }
+
+  themeToggle.addEventListener('click', () => {
+    userSetTheme = true;
+    applyTheme(!darkMode);
+    localStorage.setItem('jeeru-theme', darkMode ? 'dark' : 'light');
     themeToggle.classList.remove('spin'); void themeToggle.offsetWidth; themeToggle.classList.add('spin');
     vibrate(8);
+  });
+  themeToggle.addEventListener('dblclick', () => {
+    // double-tap resets to "auto" (follow system) — small easter-door back in
+    userSetTheme = false;
+    localStorage.removeItem('jeeru-theme');
+    applyTheme(systemDarkMQ ? systemDarkMQ.matches : false);
   });
 
   function vibrate(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
@@ -702,8 +954,61 @@
   sendBtn.addEventListener('click', doSend);
   sendBtn.disabled = true;
 
+  let editingMessage = null;
+  function startEditMessage(m){
+    editingMessage = m;
+    msgInput.value = m.text || '';
+    msgInput.style.height = 'auto';
+    msgInput.style.height = Math.min(msgInput.scrollHeight, 100) + 'px';
+    msgInput.focus();
+    sendBtn.disabled = msgInput.value.trim().length === 0;
+    editBar.style.display = 'flex';
+  }
+  function cancelEdit(){
+    editingMessage = null;
+    msgInput.value = '';
+    msgInput.style.height = 'auto';
+    sendBtn.disabled = true;
+    editBar.style.display = 'none';
+  }
+  editBarCancel.addEventListener('click', cancelEdit);
+
+  async function editMessageOnServer(id, who, text){
+    const res = await fetch('/api/messages/edit', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, who, text })
+    });
+    if(!res.ok) throw new Error('edit failed');
+    const j = await res.json();
+    return j.messages;
+  }
+  async function deleteMessageOnServer(id, who){
+    const res = await fetch('/api/messages/delete', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, who })
+    });
+    if(!res.ok) throw new Error('delete failed');
+    const j = await res.json();
+    return j.messages;
+  }
+  function confirmDeleteMessage(m){
+    if(!confirm('Ye message delete karna hai? Ye dono taraf se delete ho jayega.')) return;
+    deleteMessageOnServer(m.id, ME).then(() => loadAndRender(true)).catch(() => alert('Delete nahi ho paya, dubara try karo.'));
+  }
+
   async function doSend(){
     const text = msgInput.value.trim();
+
+    if(editingMessage){
+      if(!text){ return; }
+      const target = editingMessage;
+      cancelEdit();
+      try{ await editMessageOnServer(target.id, ME, text); }
+      catch(e){ alert('Edit save nahi hua, dubara try karo.'); }
+      await loadAndRender(true);
+      return;
+    }
+
     if(!text && !pendingMedia) return;
     msgInput.value = '';
     msgInput.style.height = 'auto';
@@ -792,23 +1097,45 @@
     if(mine && isLast){
       label += m.seen ? ' · Seen' : ' · Delivered';
     }
+    if(pinnedId === m.id) label = '📌 ' + label;
     if(timeEl.textContent !== label) timeEl.textContent = label;
+
+    // deleted / edited content can change in place without a new row
+    const bubbleEl = wrap.querySelector('.bubble');
+    if(bubbleEl){
+      if(m.deleted && !bubbleEl.querySelector('.deleted-bubble')){
+        bubbleEl.innerHTML = '<div class="deleted-bubble">🚫 Ye message delete kar diya gaya</div>';
+        bubbleEl.className = 'bubble' + (bubbleEl.classList.contains('tail') ? ' tail' : '');
+      } else if(!m.deleted && !m.mediaType && bubbleEl.firstChild && bubbleEl.firstChild.nodeType === 3 && bubbleEl.firstChild.textContent !== m.text){
+        bubbleEl.firstChild.textContent = m.text;
+        if(m.edited && !bubbleEl.querySelector('.edited-tag')){
+          const tag = document.createElement('span');
+          tag.className = 'edited-tag';
+          tag.textContent = '(edited)';
+          bubbleEl.appendChild(tag);
+        }
+      }
+    }
   }
 
   let renderInFlight = false;
   let hasLoadedOnce = false;
+  let lastList = [];
   async function loadAndRender(forceScroll){
     // if a previous poll's fetch is still in flight (slow network), skip
     // this tick rather than letting two loads race and stomp on each other
     if(renderInFlight) return;
     renderInFlight = true;
-    let list, typing;
+    let list, typing, pinnedRaw;
     try{
       list = (await fetchMessages()) || [];
       typing = (await safeGet(TYPING_KEY, true)) || {};
+      pinnedRaw = await safeGet('pinned-msg-id', true);
     } finally {
       renderInFlight = false;
     }
+    pinnedId = pinnedRaw || null;
+    lastList = list;
 
     const wasNearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 120;
 
@@ -867,9 +1194,14 @@
       // poll-based fallback toast (works even without push permission) —
       // only after the initial history load, and only for messages from
       // the other person, so we never toast our own sends or the first load
-      if(hasLoadedOnce && newFromOther && document.visibilityState === 'visible'){
-        const otherName = MEMBERS[OTHER].name;
-        showInAppToast(otherName, creativeToastBody(otherName));
+      if(hasLoadedOnce && newFromOther){
+        if(document.visibilityState === 'visible'){
+          const otherName = MEMBERS[OTHER].name;
+          showInAppToast(otherName, creativeToastBody(otherName));
+        } else {
+          unreadCount++;
+          updateUnreadBadge();
+        }
       }
 
       // patch existing rows whose seen/reactions may have changed — this
@@ -903,6 +1235,7 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
     hasLoadedOnce = true;
+    renderPinnedBanner();
   }
 
   function formatDay(ts){
@@ -924,11 +1257,17 @@
     const wrap = document.createElement('div');
     wrap.className = 'bubble-wrap';
 
-    const igMatch = !m.mediaType && m.text && m.text.match(IG_REGEX);
+    const igMatch = !m.mediaType && !m.deleted && m.text && m.text.match(IG_REGEX);
 
     const bubble = document.createElement('div');
 
-    if(m.mediaType === 'image' || m.mediaType === 'video'){
+    if(m.deleted){
+      bubble.className = 'bubble' + (isEndOfGroup ? ' tail' : '');
+      const db = document.createElement('div');
+      db.className = 'deleted-bubble';
+      db.innerHTML = '🚫 Ye message delete kar diya gaya';
+      bubble.appendChild(db);
+    } else if(m.mediaType === 'image' || m.mediaType === 'video'){
       bubble.className = 'bubble media' + (isEndOfGroup ? ' tail' : '');
       const el = document.createElement(m.mediaType === 'image' ? 'img' : 'video');
       el.src = m.mediaData;
@@ -941,15 +1280,26 @@
         cap.textContent = m.text;
         bubble.appendChild(cap);
       }
-      bubble.addEventListener('click', (e) => { if(e.target === bubble) openEmojiBar(e, m); });
+      bubble.addEventListener('click', (e) => { if(longPressFired){ longPressFired=false; return; } if(e.target === bubble) openEmojiBar(e, m); });
+    } else if(m.mediaType === 'audio'){
+      bubble.className = 'bubble voice-bubble' + (isEndOfGroup ? ' tail' : '');
+      bubble.appendChild(renderVoiceBubble(m));
+      bubble.addEventListener('click', (e) => { if(longPressFired){ longPressFired=false; return; } if(e.target === bubble) openEmojiBar(e, m); });
     } else if(igMatch){
       bubble.className = 'bubble media' + (isEndOfGroup ? ' tail' : '');
       bubble.appendChild(renderInstagramCard(igMatch[0]));
     } else {
       bubble.className = 'bubble' + (isEndOfGroup ? ' tail' : '');
       bubble.textContent = m.text;
-      bubble.addEventListener('click', (e) => openEmojiBar(e, m));
+      if(m.edited){
+        const tag = document.createElement('span');
+        tag.className = 'edited-tag';
+        tag.textContent = '(edited)';
+        bubble.appendChild(tag);
+      }
+      bubble.addEventListener('click', (e) => { if(longPressFired){ longPressFired=false; return; } openEmojiBar(e, m); });
     }
+    if(!m.deleted) attachLongPress(bubble, () => openMessageActionSheet(m));
     wrap.appendChild(bubble);
 
     const reactionKeys = Object.keys(m.reactions || {});
@@ -971,6 +1321,7 @@
     if(mine && isLast){
       label += m.seen ? ' · Seen' : ' · Delivered';
     }
+    if(pinnedId === m.id) label = '📌 ' + label;
     time.textContent = label;
     wrap.appendChild(time);
 
@@ -982,7 +1333,7 @@
   function openEmojiBar(e, message){
     activeEmojiTarget = message;
     const rect = e.currentTarget.getBoundingClientRect();
-    const barWidth = 230;
+    const barWidth = 290;
     let left = rect.left + rect.width/2 - barWidth/2;
     left = Math.max(8, Math.min(left, window.innerWidth - barWidth - 8));
     emojiBar.style.left = left + 'px';
@@ -1002,6 +1353,8 @@
       span.classList.remove('picked'); void span.offsetWidth; span.classList.add('picked');
       vibrate(12);
       await reactOnServer(activeEmojiTarget.id, ME, emoji);
+      if(emoji === '❤️') heartBurst();
+      if(emoji === '🎉') confettiBurst();
       await loadAndRender(true);
       emojiBar.classList.remove('show');
     });
@@ -1095,6 +1448,519 @@
       }
     });
   }
+
+  // ================= NEW FEATURES ================= //
+
+  // ---------- generic bottom sheet ----------
+  function openSheet(html){
+    sheet.innerHTML = html;
+    sheetOverlay.classList.add('show');
+    requestAnimationFrame(() => sheet.classList.add('show'));
+  }
+  function closeSheet(){
+    sheet.classList.remove('show');
+    sheetOverlay.classList.remove('show');
+  }
+  sheetOverlay.addEventListener('click', closeSheet);
+
+  // ---------- long-press helper ----------
+  let longPressFired = false;
+  function attachLongPress(el, cb){
+    let timer = null;
+    const start = () => { longPressFired = false; timer = setTimeout(() => { longPressFired = true; vibrate(15); cb(); }, 480); };
+    const cancel = () => { clearTimeout(timer); };
+    el.addEventListener('touchstart', start, { passive:true });
+    el.addEventListener('touchmove', cancel, { passive:true });
+    el.addEventListener('touchend', cancel);
+    el.addEventListener('mousedown', start);
+    el.addEventListener('mouseup', cancel);
+    el.addEventListener('mouseleave', cancel);
+  }
+
+  // ---------- settings sheet (⋯) ----------
+  moreBtn.addEventListener('click', () => {
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Jeeru Settings</div>
+      <div class="sheet-item" id="sheetWallpaper"><span class="ic">🖼️</span>Chat Wallpaper</div>
+      <div class="sheet-item" id="sheetLock"><span class="ic">🔒</span><div><div>App Lock</div><div class="sub">${isLockEnabled() ? 'PIN se on hai' : 'Off hai — tap karke on karo'}</div></div></div>
+      <div class="sheet-sep"></div>
+      <div class="sheet-item" id="sheetThemeAuto"><span class="ic">🌗</span><div><div>Auto Dark Mode</div><div class="sub">${userSetTheme ? 'Manual set hai — tap se wapas auto' : 'System theme follow ho raha hai ✓'}</div></div></div>
+    `);
+    $('sheetWallpaper').addEventListener('click', () => { closeSheet(); setTimeout(openWallpaperSheet, 260); });
+    $('sheetLock').addEventListener('click', () => { closeSheet(); setTimeout(toggleLockFromSettings, 260); });
+    $('sheetThemeAuto').addEventListener('click', () => {
+      userSetTheme = false;
+      localStorage.removeItem('jeeru-theme');
+      applyTheme(systemDarkMQ ? systemDarkMQ.matches : false);
+      closeSheet();
+    });
+  });
+
+  // ---------- message action sheet (pin / edit / delete / copy) ----------
+  function openMessageActionSheet(m){
+    if(m.deleted) return;
+    const mine = m.from === ME;
+    const isPinnedThis = pinnedId === m.id;
+    let items = '<div class="sheet-handle"></div>';
+    if(!m.mediaType) items += `<div class="sheet-item" id="actCopy"><span class="ic">📋</span>Copy text</div>`;
+    items += `<div class="sheet-item" id="actPin"><span class="ic">📌</span>${isPinnedThis ? 'Unpin message' : 'Pin message'}</div>`;
+    items += `<div class="sheet-item" id="actHeart"><span class="ic">❤️</span>Heart burst</div>`;
+    if(mine && !m.mediaType) items += `<div class="sheet-item" id="actEdit"><span class="ic">✏️</span>Edit</div>`;
+    if(mine) items += `<div class="sheet-item danger" id="actDelete"><span class="ic">🗑️</span>Delete</div>`;
+    openSheet(items);
+    if($('actCopy')) $('actCopy').addEventListener('click', () => { closeSheet(); try{ navigator.clipboard.writeText(m.text || ''); }catch(e){} });
+    $('actPin').addEventListener('click', () => { closeSheet(); isPinnedThis ? clearPinned() : setPinned(m.id); });
+    $('actHeart').addEventListener('click', () => { closeSheet(); heartBurst(); });
+    if($('actEdit')) $('actEdit').addEventListener('click', () => { closeSheet(); startEditMessage(m); });
+    if($('actDelete')) $('actDelete').addEventListener('click', () => { closeSheet(); confirmDeleteMessage(m); });
+  }
+
+  // ---------- pin a message ----------
+  function renderPinnedBanner(){
+    const m = lastList.find(x => x.id === pinnedId);
+    if(!m || m.deleted){
+      pinnedBanner.style.display = 'none';
+      return;
+    }
+    pinnedBanner.style.display = 'flex';
+    pinnedText.textContent = m.mediaType === 'image' ? '📷 Photo'
+      : m.mediaType === 'video' ? '🎬 Video'
+      : m.mediaType === 'audio' ? '🎤 Voice message'
+      : (m.text || '');
+  }
+  pinnedBanner.addEventListener('click', (e) => {
+    if(e.target === pinnedUnpin) return;
+    const el = rowElMap.get(pinnedId);
+    if(el){
+      el.scrollIntoView({ behavior:'smooth', block:'center' });
+      const b = el.querySelector('.bubble');
+      if(b){ b.classList.remove('pinned-highlight'); void b.offsetWidth; b.classList.add('pinned-highlight'); }
+    }
+  });
+  pinnedUnpin.addEventListener('click', (e) => { e.stopPropagation(); clearPinned(); });
+  async function setPinned(id){
+    pinnedId = id;
+    renderPinnedBanner();
+    try{ await safeSet('pinned-msg-id', id, true); }catch(e){}
+  }
+  async function clearPinned(){
+    pinnedId = null;
+    renderPinnedBanner();
+    try{ await safeSet('pinned-msg-id', null, true); }catch(e){}
+  }
+
+  // ---------- custom chat wallpaper ----------
+  const WALLPAPERS = [
+    { id:'g1', css:'linear-gradient(160deg,#FFD1DC,#FFECF1)' },
+    { id:'g2', css:'linear-gradient(160deg,#D1E8FF,#EAF6FF)' },
+    { id:'g3', css:'linear-gradient(160deg,#2C2C54,#0F0F2D)' },
+    { id:'g4', css:'linear-gradient(160deg,#FFEEDB,#FFD9A0)' },
+    { id:'g5', css:'linear-gradient(160deg,#D4FFDE,#A8F0C6)' },
+    { id:'g6', css:'linear-gradient(160deg,#1a1a2e,#16213e)' }
+  ];
+  let currentWallpaper = null;
+  async function loadWallpaper(){
+    try{ currentWallpaper = await safeGet('wallpaper', true); }catch(e){ currentWallpaper = null; }
+    applyWallpaperToDOM();
+  }
+  function applyWallpaperToDOM(){
+    if(!currentWallpaper){
+      messagesEl.style.backgroundImage = '';
+      messagesEl.style.background = '';
+      return;
+    }
+    if(String(currentWallpaper).startsWith('data:')){
+      messagesEl.style.background = '';
+      messagesEl.style.backgroundImage = `url(${currentWallpaper})`;
+      messagesEl.style.backgroundSize = 'cover';
+      messagesEl.style.backgroundPosition = 'center';
+      messagesEl.style.backgroundAttachment = 'local';
+    } else {
+      const w = WALLPAPERS.find(x => x.id === currentWallpaper);
+      messagesEl.style.backgroundImage = '';
+      messagesEl.style.background = w ? w.css : '';
+    }
+  }
+  async function setWallpaper(value){
+    currentWallpaper = value;
+    applyWallpaperToDOM();
+    closeSheet();
+    try{ await safeSet('wallpaper', value, true); }catch(e){}
+  }
+  function openWallpaperSheet(){
+    let html = '<div class="sheet-handle"></div><div class="sheet-title">Chat Wallpaper</div><div class="wallpaper-grid">';
+    html += `<div class="wallpaper-swatch ${!currentWallpaper ? 'selected' : ''}" data-w="__none__" style="background:var(--bubble-in-light);color:var(--sub-light);">✕</div>`;
+    WALLPAPERS.forEach(w => {
+      html += `<div class="wallpaper-swatch ${currentWallpaper === w.id ? 'selected' : ''}" data-w="${w.id}" style="background:${w.css}"></div>`;
+    });
+    html += `<div class="wallpaper-swatch custom-upload" id="wallpaperUploadTrigger">📷</div>`;
+    html += '</div>';
+    openSheet(html);
+    sheet.querySelectorAll('.wallpaper-swatch[data-w]').forEach(el => {
+      el.addEventListener('click', () => setWallpaper(el.dataset.w === '__none__' ? null : el.dataset.w));
+    });
+    $('wallpaperUploadTrigger').addEventListener('click', () => wallpaperFileInput.click());
+  }
+  wallpaperFileInput.addEventListener('change', async () => {
+    const file = wallpaperFileInput.files[0];
+    wallpaperFileInput.value = '';
+    if(!file || !file.type.startsWith('image/')) return;
+    try{
+      const dataUrl = await compressImage(file, 800, 0.72);
+      await setWallpaper(dataUrl);
+    }catch(e){ alert('Wallpaper set nahi ho paya.'); }
+  });
+
+  // ---------- unread badge (tab title + PWA badge) ----------
+  function updateUnreadBadge(){
+    document.title = unreadCount > 0 ? `(${unreadCount}) Jeeru` : 'Jeeru';
+    if('setAppBadge' in navigator){
+      if(unreadCount > 0) navigator.setAppBadge(unreadCount).catch(() => {});
+      else if('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
+    }
+  }
+
+  // ---------- multi-device presence / online status ----------
+  const PRESENCE_MS = 20000;
+  async function heartbeatPresence(){
+    if(!ME) return;
+    try{ await safeSet('presence-' + ME, Date.now(), true); }catch(e){}
+  }
+  async function pollPresence(){
+    if(!OTHER) return;
+    let ts = null;
+    try{ ts = await safeGet('presence-' + OTHER, true); }catch(e){}
+    const online = ts && (Date.now() - ts < PRESENCE_MS * 1.8);
+    renderPresence(online, ts);
+  }
+  function renderPresence(online, ts){
+    if(online){
+      navSub.innerHTML = '<span class="dot-live"></span>Online';
+    } else if(ts){
+      navSub.innerHTML = '<span class="dot-offline"></span>Last seen ' + timeAgo(ts);
+    } else {
+      navSub.innerHTML = '<span class="dot-offline"></span>just us two';
+    }
+  }
+  function timeAgo(ts){
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if(diff < 60) return 'just now';
+    if(diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if(diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+  }
+
+  // ---------- confetti / heart burst ----------
+  function heartBurst(){
+    for(let i = 0; i < 16; i++){
+      const el = document.createElement('div');
+      el.className = 'heart-piece';
+      el.textContent = '❤️';
+      const x = 50 + (Math.random()*46 - 23);
+      el.style.left = x + 'vw';
+      el.style.bottom = '8vh';
+      el.style.fontSize = (18 + Math.random()*20) + 'px';
+      fxLayer.appendChild(el);
+      const dur = 1300 + Math.random()*900;
+      const drift = (Math.random()*160 - 80);
+      el.animate([
+        { transform:'translate(0,0) scale(0.4) rotate(0deg)', opacity:0 },
+        { transform:`translate(${drift*0.3}px,-40vh) scale(1) rotate(${drift>0?15:-15}deg)`, opacity:1, offset:0.15 },
+        { transform:`translate(${drift}px,-92vh) scale(0.8) rotate(${drift>0?-10:10}deg)`, opacity:0 }
+      ], { duration: dur, easing:'ease-out' });
+      setTimeout(() => el.remove(), dur + 60);
+    }
+    vibrate(15);
+  }
+  function confettiBurst(){
+    const colors = ['#0A84FF','#FF375F','#FF9F0A','#30D158','#5AC8FA','#BF5AF2'];
+    for(let i = 0; i < 42; i++){
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      const size = 6 + Math.random()*6;
+      el.style.width = size + 'px'; el.style.height = (size*0.4) + 'px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.left = (Math.random()*100) + 'vw';
+      fxLayer.appendChild(el);
+      const dur = 1800 + Math.random()*1200;
+      const rot = Math.random()*720 - 360;
+      el.animate([
+        { transform:'translateY(0) rotate(0deg)', opacity:1 },
+        { transform:`translateY(110vh) rotate(${rot}deg)`, opacity:0.9 }
+      ], { duration: dur, easing:'cubic-bezier(.2,.6,.4,1)' });
+      setTimeout(() => el.remove(), dur + 60);
+    }
+    vibrate(15);
+  }
+
+  // ---------- custom reactions (any emoji, not just the preset six) ----------
+  customEmojiSlot.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if(!activeEmojiTarget) return;
+    const emoji = prompt('Koi bhi emoji likho (ya paste karo):');
+    if(!emoji) return;
+    const clean = emoji.trim().slice(0, 8);
+    if(!clean) return;
+    await reactOnServer(activeEmojiTarget.id, ME, clean);
+    if(clean.indexOf('❤') !== -1) heartBurst();
+    if(clean.indexOf('🎉') !== -1) confettiBurst();
+    await loadAndRender(true);
+    emojiBar.classList.remove('show');
+  });
+
+  // ---------- voice messages ----------
+  function formatDuration(sec){
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec/60), s = sec % 60;
+    return m + ':' + String(s).padStart(2,'0');
+  }
+  function renderVoiceBubble(m){
+    const frag = document.createDocumentFragment();
+    const btn = document.createElement('button');
+    btn.className = 'voice-play';
+    btn.textContent = '▶';
+    const wave = document.createElement('div');
+    wave.className = 'voice-wave';
+    for(let i = 0; i < 18; i++){
+      const s = document.createElement('span');
+      s.style.height = (6 + Math.random()*14) + 'px';
+      wave.appendChild(s);
+    }
+    const dur = document.createElement('div');
+    dur.className = 'voice-dur';
+    dur.textContent = formatDuration(m.audioDuration || 0);
+    const audio = new Audio(m.audioData);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(audio.paused){ audio.play(); btn.textContent = '⏸'; wave.classList.add('playing'); }
+      else { audio.pause(); btn.textContent = '▶'; wave.classList.remove('playing'); }
+    });
+    audio.addEventListener('ended', () => { btn.textContent = '▶'; wave.classList.remove('playing'); });
+    frag.appendChild(btn); frag.appendChild(wave); frag.appendChild(dur);
+    return frag;
+  }
+
+  let mediaRecorder = null, recordedChunks = [], recordStartTime = 0, recordTimerInterval = null, recordCancelled = false;
+  async function startRecording(){
+    if(mediaRecorder && mediaRecorder.state === 'recording') return;
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      alert('Ye browser voice recording support nahi karta.');
+      return;
+    }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      recordedChunks = [];
+      recordCancelled = false;
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (e) => { if(e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        recordBar.style.display = 'none';
+        clearInterval(recordTimerInterval);
+        micBtn.classList.remove('recording');
+        const duration = (Date.now() - recordStartTime) / 1000;
+        if(recordCancelled || duration < 0.6 || recordedChunks.length === 0) return;
+        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+        if(blob.size > 4 * 1024 * 1024){ alert('Voice message thoda lamba ho gaya, chhota try karo.'); return; }
+        const dataUrl = await fileToDataURL(blob);
+        const msg = { id: uid(), from: ME, text:'', ts: Date.now(), seen:false, reactions:{}, mediaType:'audio', audioData: dataUrl, audioDuration: duration };
+        if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+        try{ await appendMessage(msg); }
+        catch(e){ alert('Voice message bhejne mein dikkat aayi.'); }
+        pollTimer = setInterval(loadAndRender, POLL_MS);
+        await loadAndRender(true);
+      };
+      mediaRecorder.start();
+      recordStartTime = Date.now();
+      micBtn.classList.add('recording');
+      recordBar.style.display = 'flex';
+      recTime.textContent = '0:00';
+      recordTimerInterval = setInterval(() => { recTime.textContent = formatDuration((Date.now() - recordStartTime)/1000); }, 250);
+      vibrate(10);
+    }catch(e){
+      alert('Mic access nahi mila. Browser settings check karo.');
+    }
+  }
+  function stopRecordingAndSend(){
+    if(mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  }
+  micBtn.addEventListener('mousedown', startRecording);
+  micBtn.addEventListener('mouseup', stopRecordingAndSend);
+  micBtn.addEventListener('mouseleave', () => { if(mediaRecorder && mediaRecorder.state === 'recording') stopRecordingAndSend(); });
+  micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); }, { passive:false });
+  micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecordingAndSend(); });
+  recCancel.addEventListener('click', () => {
+    recordCancelled = true;
+    if(mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  });
+
+  // ---------- app lock (PIN + optional device biometric) ----------
+  let lockMode = 'unlock', lockInputBuffer = '', lockSetupFirstPin = '';
+  function isLockEnabled(){ return !!localStorage.getItem('jeeru-lock-pin'); }
+  async function sha256Hex(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  function buildPinPad(){
+    pinPad.innerHTML = '';
+    const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+    keys.forEach(k => {
+      const btn = document.createElement('button');
+      btn.className = 'pin-key' + (k === '' ? ' ghost' : '');
+      btn.textContent = k;
+      btn.disabled = k === '';
+      btn.addEventListener('click', () => { if(k === '⌫') lockBackspace(); else if(k !== '') lockDigit(k); });
+      pinPad.appendChild(btn);
+    });
+  }
+  function renderPinDots(){
+    pinDots.innerHTML = '';
+    for(let i = 0; i < 4; i++){
+      const d = document.createElement('div');
+      d.className = 'pin-dot' + (i < lockInputBuffer.length ? ' filled' : '');
+      pinDots.appendChild(d);
+    }
+  }
+  function lockDigit(d){
+    if(lockInputBuffer.length >= 4) return;
+    lockInputBuffer += d;
+    renderPinDots();
+    vibrate(6);
+    if(lockInputBuffer.length === 4) setTimeout(handlePinComplete, 120);
+  }
+  function lockBackspace(){ lockInputBuffer = lockInputBuffer.slice(0,-1); renderPinDots(); }
+  async function handlePinComplete(){
+    const pin = lockInputBuffer;
+    if(lockMode === 'unlock'){
+      const savedHash = localStorage.getItem('jeeru-lock-pin');
+      const hash = await sha256Hex(pin);
+      if(hash === savedHash){
+        unlockApp();
+      } else {
+        lockError.textContent = 'Galat PIN, dobara try karo.';
+        vibrate([30,40,30]);
+        setTimeout(() => { lockInputBuffer = ''; renderPinDots(); }, 300);
+      }
+    } else if(lockMode === 'setup1'){
+      lockSetupFirstPin = pin;
+      lockInputBuffer = '';
+      lockMode = 'setup2';
+      lockTitle.textContent = 'PIN dobara likho';
+      renderPinDots();
+    } else if(lockMode === 'setup2'){
+      if(pin === lockSetupFirstPin){
+        const hash = await sha256Hex(pin);
+        localStorage.setItem('jeeru-lock-pin', hash);
+        closeLockScreen();
+        offerBiometricEnroll();
+      } else {
+        lockError.textContent = 'PIN match nahi hua, phir se try karo.';
+        lockMode = 'setup1';
+        lockInputBuffer = '';
+        lockTitle.textContent = 'Naya PIN banao';
+        renderPinDots();
+      }
+    }
+  }
+  async function checkBiometricButton(){
+    lockBiometric.style.display = 'none';
+    if(localStorage.getItem('jeeru-lock-bio-id') && window.PublicKeyCredential){
+      try{
+        const avail = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if(avail) lockBiometric.style.display = 'block';
+      }catch(e){}
+    }
+  }
+  function showLockScreen(mode){
+    lockMode = mode;
+    lockInputBuffer = '';
+    lockError.textContent = '';
+    buildPinPad();
+    renderPinDots();
+    if(mode === 'unlock'){
+      lockTitle.textContent = 'Jeeru Locked';
+      lockSetupNote.style.display = 'none';
+      checkBiometricButton();
+    } else {
+      lockTitle.textContent = 'Naya PIN banao';
+      lockSetupNote.style.display = 'block';
+      lockSetupNote.textContent = 'Ye PIN sirf is device par chalega.';
+      lockBiometric.style.display = 'none';
+    }
+    lockScreen.classList.add('show');
+  }
+  function closeLockScreen(){ lockScreen.classList.remove('show'); }
+  function unlockApp(){ closeLockScreen(); }
+  lockBiometric.addEventListener('click', async () => {
+    const ok = await verifyBiometric();
+    if(ok) unlockApp();
+    else lockError.textContent = 'Biometric fail hua, PIN try karo.';
+  });
+  async function registerBiometric(){
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: 'Jeeru' },
+        user: { id: crypto.getRandomValues(new Uint8Array(16)), name: ME || 'jeeru-user', displayName: 'Jeeru' },
+        pubKeyCredParams: [{ alg:-7, type:'public-key' }, { alg:-257, type:'public-key' }],
+        authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required' },
+        timeout: 60000
+      }
+    });
+    localStorage.setItem('jeeru-lock-bio-id', btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+  }
+  async function verifyBiometric(){
+    const idB64 = localStorage.getItem('jeeru-lock-bio-id');
+    if(!idB64) return false;
+    const rawId = Uint8Array.from(atob(idB64), c => c.charCodeAt(0));
+    try{
+      await navigator.credentials.get({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{ id: rawId, type:'public-key' }],
+          userVerification: 'required',
+          timeout: 60000
+        }
+      });
+      return true;
+    }catch(e){ return false; }
+  }
+  async function offerBiometricEnroll(){
+    if(!window.PublicKeyCredential) return;
+    try{
+      const avail = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      if(!avail) return;
+    }catch(e){ return; }
+    if(confirm('Face/Touch ID se bhi unlock karna chahoge?')){
+      try{ await registerBiometric(); alert('Ho gaya! Ab Face/Touch ID se bhi unlock kar sakte ho.'); }
+      catch(e){ /* cancelled or unsupported — silently ignore */ }
+    }
+  }
+  function toggleLockFromSettings(){
+    if(isLockEnabled()){
+      if(!confirm('App Lock band karna hai?')) return;
+      localStorage.removeItem('jeeru-lock-pin');
+      localStorage.removeItem('jeeru-lock-bio-id');
+    } else {
+      lockSetupFirstPin = '';
+      showLockScreen('setup1');
+    }
+  }
+
+  // ---------- wire up visibility / lock / unread bootstrap ----------
+  let appBootReady = false;
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){
+      if(isLockEnabled() && appBootReady) showLockScreen('unlock');
+    } else {
+      unreadCount = 0;
+      updateUnreadBadge();
+      if(ME) heartbeatPresence();
+    }
+  });
+  if(isLockEnabled()) showLockScreen('unlock');
+  appBootReady = true;
 
 })();
 </script>
