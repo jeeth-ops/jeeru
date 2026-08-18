@@ -4,10 +4,46 @@ const path = require('path');
 const crypto = require('crypto');
 
 const app = express();
+app.disable('x-powered-by'); // don't advertise Express/version to the internet
 app.use(express.json({ limit: '25mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+
+// ---------- Baseline security headers on every response ----------
+// (No helmet dependency — this is a small, fixed set of headers, so a
+// couple of lines here avoids pulling in an extra package.)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');           // no embedding Jeeru in someone else's iframe
+  res.setHeader('Referrer-Policy', 'no-referrer');     // never leak URLs (with keys/ids) to a third-party Referer header
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), interest-cohort=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+  next();
+});
+// Chat content is private — make sure nothing in /api ever gets cached by a
+// shared proxy, a browser back/forward cache, or written to disk anywhere.
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  next();
+});
+
+app.use(express.static(path.join(__dirname, 'public'), {
+  // Never let the static server hand out dotfiles (.env, .git, etc.)
+  dotfiles: 'deny',
+  index: ['index.html']
+}));
 
 const DATA_FILE = path.join(__dirname, 'data.json');
+
+// Defense in depth: data.json / server.js / package*.json live outside the
+// `public/` folder that express.static serves, so they are already
+// unreachable over HTTP — but block them by name explicitly too, in case
+// the static root is ever pointed at the project root by mistake later.
+app.use((req, res, next) => {
+  if (/^\/(data\.json|server\.js|package(-lock)?\.json|\.env)$/i.test(req.path)) {
+    return res.status(404).end();
+  }
+  next();
+});
 
 /**
  * ---------- Shared-secret access gate ----------
