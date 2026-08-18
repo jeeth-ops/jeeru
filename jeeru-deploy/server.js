@@ -482,6 +482,12 @@ registerListRoutes('journal', 'us-journal');
 // OUR PLACES: meaningful couple locations (first date, favourites, trips, milestones).
 // Each item: { id, from, title, category, date, notes, photos:[dataURL...], createdAt }
 registerListRoutes('places', 'us-places');
+// PHOTOS / REELS: private media library for just the two of you.
+// Each item: { id, from, mediaType:'image'|'video', mediaData: dataURL, caption, createdAt, saved:{who:true} }
+// Reuses the same generic factory (react/comment/save/update/delete) as
+// moments etc., so favoriting (save) and author-only delete come for free.
+registerListRoutes('photos', 'us-photos');
+registerListRoutes('reels', 'us-reels');
 
 // ---------- Listen Together / Watch Together: synchronized rooms ----------
 // One small room-state object per room type ("listen" or "watch"), holding
