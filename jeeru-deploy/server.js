@@ -1,7 +1,7 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { MongoClient } = require('mongodb');
 
 const app = express();
 app.disable('x-powered-by'); // don't advertise Express/version to the internet
@@ -32,12 +32,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
   index: ['index.html']
 }));
 
-const DATA_FILE = path.join(__dirname, 'data.json');
-
-// Defense in depth: data.json / server.js / package*.json live outside the
-// `public/` folder that express.static serves, so they are already
-// unreachable over HTTP — but block them by name explicitly too, in case
-// the static root is ever pointed at the project root by mistake later.
+// Defense in depth: server.js / package*.json live outside the `public/`
+// folder that express.static serves, so they are already unreachable over
+// HTTP — but block them by name explicitly too, in case the static root is
+// ever pointed at the project root by mistake later.
 app.use((req, res, next) => {
   if (/^\/(data\.json|server\.js|package(-lock)?\.json|\.env)$/i.test(req.path)) {
     return res.status(404).end();
@@ -115,16 +113,63 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+/**
+ * ---------- Persistence: MongoDB (replaces the old data.json file) ----------
+ * On a host like Render, the local filesystem is wiped every time the
+ * service restarts/spins down — which was silently resetting data.json to
+ * `{}` and made all messages/photos/memories/places "disappear". MongoDB
+ * Atlas stores everything in the cloud instead, so it survives restarts.
+ *
+ * To keep every existing route in this file completely unchanged, we keep
+ * the exact same loadData()/saveData(data) shape the rest of the code
+ * already calls — they just read/write an in-memory `cache` object that is
+ * loaded from Mongo once at startup, and pushed back to Mongo (in order,
+ * via a small queue) every time saveData() is called.
+ */
+const MONGODB_URI = process.env.MONGODB_URI || '';
+const DB_NAME = process.env.MONGODB_DB || 'jeeru';
+const COLLECTION_NAME = 'store';
+const DOC_ID = 'main';
+
+if (!MONGODB_URI) {
+  console.warn('WARNING: MONGODB_URI env var is not set. Data will not persist.');
+}
+
+let mongoClient = null;
+let collection = null;
+let cache = {}; // in-memory mirror of the one document in Mongo
+
+async function connectMongo() {
+  mongoClient = new MongoClient(MONGODB_URI);
+  await mongoClient.connect();
+  collection = mongoClient.db(DB_NAME).collection(COLLECTION_NAME);
+  const doc = await collection.findOne({ _id: DOC_ID });
+  cache = (doc && doc.data) || {};
+  console.log('Connected to MongoDB, loaded', Object.keys(cache).length, 'keys');
+}
+
+// Keep writes going to Mongo in the same order saveData() was called in,
+// even though we don't await each one at the call site (every existing
+// call site treats saveData as synchronous).
+let persistQueue = Promise.resolve();
+function persist(data) {
+  persistQueue = persistQueue
+    .then(() => collection.updateOne(
+      { _id: DOC_ID },
+      { $set: { data, updatedAt: new Date() } },
+      { upsert: true }
+    ))
+    .catch((e) => console.error('Mongo persist failed:', e));
+  return persistQueue;
+}
+
 function loadData() {
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  } catch (e) {
-    return {};
-  }
+  return cache;
 }
 
 function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data));
+  cache = data;
+  persist(data);
 }
 
 /**
@@ -614,4 +659,11 @@ ROOM_TYPES.forEach((type) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('Jeeru server running on port ' + PORT));
+connectMongo()
+  .then(() => {
+    app.listen(PORT, () => console.log('Jeeru server running on port ' + PORT));
+  })
+  .catch((e) => {
+    console.error('Failed to connect to MongoDB. Server not started.', e);
+    process.exit(1);
+  });
