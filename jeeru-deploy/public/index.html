@@ -1282,8 +1282,36 @@
   #photoViewerCaption{ font-size:14.5px; font-weight:600; padding:0 24px; }
   #photoViewerDate{ font-size:12px; color:rgba(255,255,255,0.6); margin-top:2px; }
 
-  /* ================= REELS ================= */
-  #screen-reels{ position:relative; background:#000; }
+  /* ================= REELS GRID (Instagram-style picker) ================= */
+  #reelsGrid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:2px; padding:0 0 var(--sp-6);
+  }
+  .reel-tile{
+    position:relative; aspect-ratio:9/16; overflow:hidden; background:#0c0c0e; cursor:pointer;
+    animation:riseIn .35s var(--spring) both; transition:transform var(--dur-fast) var(--spring);
+  }
+  .reel-tile:active{ transform:scale(0.96); }
+  .reel-tile video{ width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; background:#0c0c0e; }
+  .reel-tile .rt-badge{
+    position:absolute; left:6px; bottom:6px; display:flex; align-items:center; gap:3px; color:#fff; font-size:11px; font-weight:700;
+    text-shadow:0 1px 4px rgba(0,0,0,0.7); z-index:1;
+  }
+  .reel-tile .rt-fav{ position:absolute; top:6px; right:6px; font-size:13px; z-index:1; filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
+  .reel-tile .rt-shade{ position:absolute; left:0; right:0; bottom:0; height:46%; background:linear-gradient(0deg, rgba(0,0,0,0.5), transparent); pointer-events:none; }
+  .reel-skel-tile{ aspect-ratio:9/16; background:var(--bubble-in-light); animation:skelPulse 1.3s ease-in-out infinite; }
+  body.dark .reel-skel-tile{ background:var(--bubble-in-dark); }
+
+  /* ================= REELS VIEWER: full-screen swipeable player ================= */
+  #reelsViewer{
+    position:fixed; inset:0; z-index:115; background:#000; display:none; flex-direction:column;
+  }
+  #reelsViewer.show{ display:flex; animation:fadeIn .22s ease; }
+  #reelsViewerClose{
+    position:absolute; z-index:6; left:14px; top:calc(14px + env(safe-area-inset-top)); width:34px; height:34px; border-radius:50%; border:none;
+    background:rgba(255,255,255,0.16); backdrop-filter:blur(10px); color:#fff; font-size:15px; display:flex; align-items:center; justify-content:center;
+    transition:transform var(--dur-fast) var(--spring);
+  }
+  #reelsViewerClose:active{ transform:scale(0.88); }
   #reelsFeed{
     flex:1; overflow-y:auto; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; height:100%;
   }
@@ -1615,8 +1643,15 @@
   </div>
 
   <div id="screen-reels" class="screen">
+    <div class="feed-scroll" id="reelsScroll">
+      <div class="feed-header"><div class="feed-title"><span class="ft-ic">🎬</span>Reels</div><button class="fab" id="reelsFab">+</button></div>
+      <div id="reelsGrid"></div>
+    </div>
+  </div>
+
+  <div id="reelsViewer">
+    <button id="reelsViewerClose">✕</button>
     <div id="reelsFeed"></div>
-    <button class="fab" id="reelsFab" style="position:absolute; right:var(--sp-4); bottom:calc(var(--sp-5) + env(safe-area-inset-bottom)); z-index:5;">+</button>
   </div>
 
   <div id="photoViewer">
@@ -4755,7 +4790,7 @@
   // ======================================================================
   // ================= PHOTOS + REELS =================
   let photosCache = null, reelsCache = null;
-  let photosGridEl = $('photosGrid'), reelsFeedEl = $('reelsFeed');
+  let photosGridEl = $('photosGrid'), reelsFeedEl = $('reelsFeed'), reelsGridEl = $('reelsGrid'), reelsViewerEl = $('reelsViewer');
   let photoViewerEl = $('photoViewer'), photoViewerTrack = $('photoViewerTrack'), photoViewerCaption = $('photoViewerCaption'), photoViewerDate = $('photoViewerDate');
   let photoViewerClose = $('photoViewerClose'), photoViewerFav = $('photoViewerFav'), photoViewerDelete = $('photoViewerDelete');
   let mediaUploadSheet = $('mediaUploadSheet'), mediaUploadCard = $('mediaUploadCard'), mediaUploadTitle = $('mediaUploadTitle');
@@ -4925,6 +4960,7 @@
 
   // ---------- REELS ----------
   let reelsObserver = null;
+  let reelsViewerIndex = 0;
   async function fetchReels(){
     try{
       const res = await apiFetch('/api/reels');
@@ -4937,23 +4973,58 @@
 
   async function renderReelsScreen(force){
     if(reelsCache && !force){ return; }
-    reelsFeedEl.innerHTML = '<div class="reel-page"><div class="reel-skel"></div></div>';
+    reelsGridEl.innerHTML = Array(6).fill('<div class="reel-skel-tile"></div>').join('');
     const items = await fetchReels();
     if(items === null){
-      reelsFeedEl.innerHTML = '<div class="empty-state" style="color:#fff;"><div class="ph-ic">📡</div><div class="ph-title" style="color:#fff;">Couldn\'t load reels</div><div class="ph-sub">Check your connection and try again.</div></div>';
+      reelsGridEl.innerHTML = '<div class="empty-state"><div class="ph-ic">📡</div><div class="ph-title">Couldn\'t load reels</div><div class="ph-sub">Check your connection and pull to try again.</div></div>';
       return;
     }
     reelsCache = items;
-    paintReelsFeed();
+    paintReelsGrid();
   }
 
-  function paintReelsFeed(){
-    if(reelsObserver) reelsObserver.disconnect();
-    reelsFeedEl.innerHTML = '';
+  // ---- Grid picker: Instagram-style 3-column thumbnail grid, tap to open the swipeable player ----
+  function paintReelsGrid(){
+    reelsGridEl.innerHTML = '';
     if(!reelsCache.length){
-      reelsFeedEl.innerHTML = '<div class="empty-state" style="color:#fff;"><div class="ph-ic">🎞️</div><div class="ph-title" style="color:#fff;">No reels yet</div><div class="ph-sub">Add your first reel together — tap the + below.</div></div>';
+      reelsGridEl.innerHTML = '<div class="empty-state"><div class="ph-ic">🎞️</div><div class="ph-title">No reels yet</div><div class="ph-sub">Add your first reel together — tap the + above.</div></div>';
       return;
     }
+    reelsCache.forEach((r, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'reel-tile';
+      const isFav = !!(r.saved && r.saved[ME]);
+      tile.innerHTML = `
+        <video src="${r.mediaData}#t=0.1" playsinline muted preload="metadata"></video>
+        <div class="rt-shade"></div>
+        ${isFav ? '<div class="rt-fav">❤️</div>' : ''}
+        <div class="rt-badge">▶️ ${escapeHtml(r.from === ME ? 'You' : (MEMBERS[r.from] ? MEMBERS[r.from].name : r.from))}</div>`;
+      tile.addEventListener('click', () => { vibrate(6); openReelsViewer(i); });
+      reelsGridEl.appendChild(tile);
+    });
+  }
+
+  // ---- Full-screen swipeable player (Reels-tab style), opened from the grid ----
+  function openReelsViewer(startIndex){
+    reelsViewerIndex = startIndex;
+    buildReelsPlayer();
+    reelsViewerEl.classList.add('show');
+    requestAnimationFrame(() => {
+      const pages = reelsFeedEl.querySelectorAll('.reel-page');
+      if(pages[startIndex]) pages[startIndex].scrollIntoView({ block:'start' });
+    });
+  }
+  function closeReelsViewer(){
+    pauseAllReels();
+    reelsViewerEl.classList.remove('show');
+    if(reelsObserver) reelsObserver.disconnect();
+    reelsFeedEl.innerHTML = '';
+  }
+  $('reelsViewerClose').addEventListener('click', () => { vibrate(6); closeReelsViewer(); });
+
+  function buildReelsPlayer(){
+    if(reelsObserver) reelsObserver.disconnect();
+    reelsFeedEl.innerHTML = '';
     reelsObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const vid = entry.target.querySelector('video');
@@ -5009,12 +5080,14 @@
         const on = !!(nr && nr.saved && nr.saved[ME]);
         e.currentTarget.classList.toggle('on', on);
         e.currentTarget.textContent = on ? '❤️' : '🤍';
+        paintReelsGrid();
       });
       const delBtn = page.querySelector('.reel-del');
       if(delBtn) delBtn.addEventListener('click', async (e) => {
         e.stopPropagation(); vibrate(14);
         await deleteItem('reels', r);
-        paintReelsFeed();
+        paintReelsGrid();
+        closeReelsViewer();
       });
       reelsFeedEl.appendChild(page);
       reelsObserver.observe(page);
@@ -5090,7 +5163,7 @@
       const j = await res.json();
       const sorted = (j.items||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
       if(route === 'photos'){ photosCache = sorted; paintPhotosGrid(); }
-      else{ reelsCache = sorted; paintReelsFeed(); }
+      else{ reelsCache = sorted; paintReelsGrid(); }
       vibrate(16);
       closeUploadSheet();
     }catch(e){
