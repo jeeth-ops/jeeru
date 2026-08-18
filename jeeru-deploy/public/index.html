@@ -4499,9 +4499,10 @@
       return;
     }
     el.innerHTML = filled.map(f => {
+      const neg = f.key === 'dislikes';
       const parts = [];
-      if(mine[f.key]) parts.push('<b>You</b> love ' + escapeHtml(mine[f.key]));
-      if(theirs[f.key]) parts.push('<b>' + escapeHtml(personName(OTHER)) + '</b> loves ' + escapeHtml(theirs[f.key]));
+      if(mine[f.key]) parts.push('<b>You</b> ' + (neg ? "don't love" : 'love') + ' ' + escapeHtml(mine[f.key]));
+      if(theirs[f.key]) parts.push('<b>' + escapeHtml(personName(OTHER)) + '</b> ' + (neg ? "doesn't love" : 'loves') + ' ' + escapeHtml(theirs[f.key]));
       return '<div style="margin-bottom:8px;">' + f.icon + ' ' + parts.join(' &nbsp;·&nbsp; ') + '</div>';
     }).join('');
   }
