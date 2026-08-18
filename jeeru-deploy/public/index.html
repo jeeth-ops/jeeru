@@ -392,6 +392,7 @@
     backdrop-filter:blur(20px); background:var(--panel-light); border-top:0.5px solid var(--sep-light);
     transition:background .35s, border-color .35s;
     opacity:0; transform:translateY(14px);
+    margin-bottom:var(--kb-inset, 0px); /* extra nudge above the keyboard on browsers that don't resize the layout viewport */
   }
   #inputbar.in{ animation:slideUp .5s var(--spring) forwards; animation-delay:.05s; }
   @keyframes slideUp{ to{ opacity:1; transform:translateY(0); } }
@@ -1176,7 +1177,51 @@
   .quiz-result-emoji{ font-size:56px; animation:pop .5s var(--spring); }
   .quiz-result-score{ font-size:var(--fs-title1); font-weight:800; margin-top:var(--sp-2); }
   .quiz-result-sub{ font-size:var(--fs-body); color:var(--sub-light); margin-top:4px; }
-  .quiz-again-btn{ margin-top:var(--sp-5); background:linear-gradient(160deg,#0A84FF,#5AC8FA); color:#fff; border:none; border-radius:14px; padding:13px 22px; font-weight:700; font-size:var(--fs-body); cursor:pointer; box-shadow:var(--shadow-blue); }
+
+  /* ================= App lock / privacy / offline ================= */
+  #appLock{
+    position:fixed; inset:0; z-index:200; display:none; flex-direction:column; align-items:center; justify-content:center;
+    padding:32px; background:var(--bg-light); overflow:hidden;
+  }
+  body.dark #appLock{ background:var(--bg-dark); }
+  #appLock.show{ display:flex; }
+  #appLockIc{ font-size:44px; margin-bottom:14px; position:relative; z-index:1; animation:pop .5s var(--spring); }
+  #appLockBiometricBtn{
+    max-width:280px; width:100%; margin-bottom:var(--sp-3); padding:13px; border-radius:var(--r-md); border:1.5px solid var(--blue);
+    background:transparent; color:var(--blue); font-weight:700; font-size:var(--fs-body); cursor:pointer; position:relative; z-index:1;
+  }
+  #appLockPinInput{
+    width:100%; max-width:280px; padding:14px var(--sp-4); border-radius:var(--r-md); border:none;
+    background:var(--bubble-in-light); color:var(--text-light); font-size:var(--fs-headline); text-align:center;
+    letter-spacing:0.5px; outline:none; position:relative; z-index:1;
+  }
+  body.dark #appLockPinInput{ background:var(--bubble-in-dark); color:var(--text-dark); }
+  #appLockBtn{
+    margin-top:var(--sp-4); width:100%; max-width:280px; padding:14px; border:none; border-radius:var(--r-md);
+    background:var(--blue); color:#fff; font-size:var(--fs-headline); font-weight:600; cursor:pointer; box-shadow:var(--shadow-blue);
+    position:relative; z-index:1;
+  }
+  #appLockError{ margin-top:var(--sp-3); font-size:var(--fs-footnote); color:var(--danger); min-height:16px; position:relative; z-index:1; }
+
+  /* Privacy: blur the whole app while backgrounded/in the task switcher, so a
+     glance at a recent-apps thumbnail can't reveal messages/photos. */
+  body.app-hidden #mainArea, body.app-hidden #tabbar, body.app-hidden #navbar{
+    filter:blur(28px); transition:filter .15s ease; pointer-events:none;
+  }
+
+  #offlineBanner{
+    position:fixed; left:0; right:0; top:0; z-index:150; display:none; align-items:center; justify-content:center; gap:8px;
+    padding:9px 12px; background:#FF9F0A; color:#1a1a1a; font-size:var(--fs-footnote); font-weight:700; text-align:center;
+    padding-top:calc(9px + env(safe-area-inset-top));
+  }
+  #offlineBanner.show{ display:flex; }
+  body.dark #offlineBanner{ background:#B25E00; color:#fff; }
+
+  .feed-load-more{
+    display:block; margin:var(--sp-2) auto var(--sp-4); padding:10px 20px; border-radius:20px; border:1.5px solid var(--sep-light);
+    background:var(--surface-elevated-light); color:var(--sub-light); font-weight:700; font-size:var(--fs-footnote); cursor:pointer;
+  }
+  body.dark .feed-load-more{ background:var(--surface-elevated-dark); border-color:var(--sep-dark); }
 </style>
 </head>
 <body>
@@ -1194,6 +1239,22 @@
     <button id="loginBtn">Continue</button>
     <div id="loginError"></div>
   </div>
+
+  <!-- ================= App lock (backgrounding / re-open) ================= -->
+  <div id="appLock">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div id="appLockIc">🔒</div>
+    <div class="login-title" id="appLockTitle">Jeeru is locked</div>
+    <div class="login-sub" id="appLockSub">Enter the shared PIN to continue.</div>
+    <button id="appLockBiometricBtn" style="display:none;">🫆 Unlock with Face/Touch ID</button>
+    <input id="appLockPinInput" type="password" placeholder="Shared PIN" autocomplete="off">
+    <button id="appLockBtn">Unlock</button>
+    <div id="appLockError"></div>
+  </div>
+
+  <!-- ================= Offline banner ================= -->
+  <div id="offlineBanner"><span>📡</span><span>You're offline — showing the last saved data.</span></div>
 
   <nav id="tabbar" style="display:none;">
     <button class="tab-btn" data-screen="home"><span class="tab-ic">🏠</span><span class="tab-label">Home</span></button>
@@ -1456,6 +1517,7 @@
       <div class="feed-header"><div class="feed-title"><span class="ft-ic">⚙️</span>Settings</div></div>
       <div id="profileSettingsList">
         <button class="profile-setting-btn" id="profThemeBtn">🌙 <span>Toggle theme</span></button>
+        <button class="profile-setting-btn" id="profBiometricBtn" style="display:none;">🫆 <span>Enable Face/Touch ID unlock</span></button>
       </div>
       <div style="height:var(--sp-6);"></div>
     </div>
@@ -3119,8 +3181,12 @@
     composerFileInput.value = '';
     if(!file) return;
     if(file.size > 20 * 1024 * 1024){ alert('File thoda bada hai, chhota try karo (max 20MB).'); return; }
-    const dataUrl = await fileToDataURL(file);
-    composerMedia = dataUrl;
+    if(composerType === 'image' && file.type.startsWith('image/')){
+      try{ composerMedia = await compressImage(file, 1600, 0.82); }
+      catch(e){ composerMedia = await fileToDataURL(file); }
+    } else {
+      composerMedia = await fileToDataURL(file);
+    }
     renderComposerMediaArea();
   });
   async function startComposerRecording(triggerEl){
@@ -3197,7 +3263,7 @@
   let momentsCache = [];
   function momentMediaHtml(m){
     if(!m.mediaType) return '';
-    if(m.mediaType === 'image') return '<img class="mc-media" data-id="' + m.id + '" src="' + m.mediaData + '">';
+    if(m.mediaType === 'image') return '<img class="mc-media" loading="lazy" data-id="' + m.id + '" src="' + m.mediaData + '">';
     if(m.mediaType === 'video') return '<video class="mc-media" data-id="' + m.id + '" src="' + m.mediaData + '" muted playsinline preload="metadata"></video>';
     if(m.mediaType === 'audio') return '<div class="mc-voice">🎤 <audio src="' + m.mediaData + '" controls style="flex:1;height:32px;"></audio></div>';
     return '';
@@ -3267,14 +3333,13 @@
       momentsList.innerHTML = '<div class="empty-state"><div class="ph-ic">✨</div><div class="ph-title">No moments yet</div><div class="ph-sub">Tap + to share your first one together.</div></div>';
       return;
     }
-    momentsCache.forEach(m => momentsList.appendChild(renderMomentCard(m)));
+    renderWindowed(momentsList, momentsCache, 12, renderMomentCard);
   }
-
   // ---------- Memories timeline ----------
   const memoriesListEl = $('memories-list'), onThisDayWrap = $('onThisDayWrap');
   function memMediaHtml(m){
     if(!m.mediaType) return '';
-    if(m.mediaType === 'image') return '<img class="mem-media" data-id="' + m.id + '" src="' + m.mediaData + '">';
+    if(m.mediaType === 'image') return '<img class="mem-media" loading="lazy" data-id="' + m.id + '" src="' + m.mediaData + '">';
     if(m.mediaType === 'video') return '<video class="mem-media" data-id="' + m.id + '" src="' + m.mediaData + '" muted playsinline preload="metadata"></video>';
     if(m.mediaType === 'audio') return '<div class="mc-voice" style="margin:8px var(--sp-4) 0;">🎤 <audio src="' + m.mediaData + '" controls style="flex:1;height:32px;"></audio></div>';
     return '';
@@ -3298,7 +3363,7 @@
       memoriesListEl.innerHTML = '<div class="empty-state"><div class="ph-ic">📖</div><div class="ph-title">No memories yet</div><div class="ph-sub">Save a moment, or add one directly with +.</div></div>';
       return;
     }
-    memories.forEach(m => {
+    renderWindowed(memoriesListEl, memories, 12, m => {
       const row = document.createElement('div'); row.className = 'mem-row';
       row.innerHTML = '<div class="mem-dot"></div><div class="mem-card">' +
         '<div class="mem-date">' + fmtDate(m.date) + '</div>' +
@@ -3308,7 +3373,7 @@
         '</div>';
       const mediaEl = row.querySelector('.mem-media');
       if(mediaEl) mediaEl.addEventListener('click', () => openLightbox(m.mediaType, m.mediaData));
-      memoriesListEl.appendChild(row);
+      return row;
     });
   }
 
@@ -3561,11 +3626,6 @@
     });
     return div;
   }
-
-  function escapeHtml(s){
-    return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-  }
-
   function openSheet(innerHtml, onMount){
     const overlay = document.createElement('div');
     overlay.className = 'sheet-overlay';
@@ -4091,7 +4151,8 @@
     for(const f of files){
       if(placePhotos.length >= 6) break;
       if(f.size > 15*1024*1024) continue;
-      placePhotos.push(await fileToDataURL(f));
+      try{ placePhotos.push(await compressImage(f, 1600, 0.82)); }
+      catch(e){ placePhotos.push(await fileToDataURL(f)); }
     }
     renderPlacePhotosArea();
   });
@@ -4136,32 +4197,33 @@
       timeline.innerHTML = '<div class="empty-state"><div class="ph-ic">📍</div><div class="ph-title">No places pinned yet</div><div class="ph-sub">Add your first date spot, a favourite cafe, or a trip you took together.</div></div>';
       return;
     }
-    places.forEach(p => {
-      const cat = PLACE_CATS[p.category] || PLACE_CATS['favourite'];
-      const row = document.createElement('div'); row.className = 'place-row';
-      const photosHtml = (p.photos && p.photos.length) ?
-        '<div class="place-photos">' + p.photos.map(src => '<img src="' + src + '">').join('') + '</div>' : '';
-      row.innerHTML =
-        '<div class="place-dot">' + cat.icon + '</div>' +
-        '<div class="place-card">' + photosHtml +
-          '<div class="place-body">' +
-            '<div class="place-cat-badge">' + cat.icon + ' ' + cat.label + '</div>' +
-            '<div class="place-title">' + escapeHtml(p.title) + '</div>' +
-            '<div class="place-date">' + fmtDate(p.date) + '</div>' +
-            (p.notes ? '<div class="place-notes">' + escapeHtml(p.notes) + '</div>' : '') +
-            '<div class="place-foot"><span class="place-by">Pinned by ' + escapeHtml(personName(p.from)) + '</span>' +
-            (p.from === ME ? '<button class="place-del">Delete</button>' : '') + '</div>' +
-          '</div>' +
-        '</div>';
-      row.querySelectorAll('.place-photos img').forEach(img => img.addEventListener('click', () => openLightbox('image', img.src)));
-      const delBtn = row.querySelector('.place-del');
-      if(delBtn) delBtn.addEventListener('click', async () => {
-        if(!confirm('Remove this place?')) return;
-        await apiListAction('places', 'delete', { id:p.id, who:ME });
-        await renderPlacesScreen();
-      });
-      timeline.appendChild(row);
+    renderWindowed(timeline, places, 10, renderPlaceRow);
+  }
+  function renderPlaceRow(p){
+    const cat = PLACE_CATS[p.category] || PLACE_CATS['favourite'];
+    const row = document.createElement('div'); row.className = 'place-row';
+    const photosHtml = (p.photos && p.photos.length) ?
+      '<div class="place-photos">' + p.photos.map(src => '<img loading="lazy" src="' + src + '">').join('') + '</div>' : '';
+    row.innerHTML =
+      '<div class="place-dot">' + cat.icon + '</div>' +
+      '<div class="place-card">' + photosHtml +
+        '<div class="place-body">' +
+          '<div class="place-cat-badge">' + cat.icon + ' ' + cat.label + '</div>' +
+          '<div class="place-title">' + escapeHtml(p.title) + '</div>' +
+          '<div class="place-date">' + fmtDate(p.date) + '</div>' +
+          (p.notes ? '<div class="place-notes">' + escapeHtml(p.notes) + '</div>' : '') +
+          '<div class="place-foot"><span class="place-by">Pinned by ' + escapeHtml(personName(p.from)) + '</span>' +
+          (p.from === ME ? '<button class="place-del">Delete</button>' : '') + '</div>' +
+        '</div>' +
+      '</div>';
+    row.querySelectorAll('.place-photos img').forEach(img => img.addEventListener('click', () => openLightbox('image', img.src)));
+    const delBtn = row.querySelector('.place-del');
+    if(delBtn) delBtn.addEventListener('click', async () => {
+      if(!confirm('Remove this place?')) return;
+      await apiListAction('places', 'delete', { id:p.id, who:ME });
+      await renderPlacesScreen();
     });
+    return row;
   }
 
   // ======================================================================
@@ -4389,6 +4451,158 @@
     if(!knowMeCache[ME] && !knowMeCache[OTHER]) knowMeCache = await loadKnowMe();
     $('quizHome').style.display = ''; $('quizPlay').style.display = 'none'; $('quizResult').style.display = 'none';
     renderQuizHome();
+  }
+
+  // ======================================================================
+  // APP LOCK — re-locks the app after it's been backgrounded for a while,
+  // and blurs the whole screen the instant it's hidden (task switcher /
+  // screen recording protection is not something a web page can force the
+  // OS to apply, so blur-on-hide is the practical equivalent).
+  // ======================================================================
+  const LOCK_TIMEOUT_MS = 60 * 1000; // require re-auth after 1 min in background
+  const appLockEl = $('appLock'), appLockPinInput = $('appLockPinInput'), appLockBtn = $('appLockBtn'),
+    appLockError = $('appLockError'), appLockBiometricBtn = $('appLockBiometricBtn');
+  let hiddenAt = 0;
+  let appIsLocked = false;
+
+  function hasBiometricCredential(){ return !!localStorage.getItem('jeeru-biometric-id'); }
+
+  async function biometricAvailable(){
+    if(!window.PublicKeyCredential || !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) return false;
+    try{ return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }catch(e){ return false; }
+  }
+  async function registerBiometric(){
+    try{
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const cred = await navigator.credentials.create({ publicKey: {
+        challenge, rp: { name:'Jeeru' },
+        user: { id: new TextEncoder().encode(ME || 'jeeru-user'), name: ME || 'user', displayName: personName(ME) || 'You' },
+        pubKeyCredParams: [{ type:'public-key', alg:-7 }, { type:'public-key', alg:-257 }],
+        authenticatorSelection: { authenticatorAttachment:'platform', userVerification:'required' },
+        timeout: 60000
+      }});
+      if(!cred) return false;
+      localStorage.setItem('jeeru-biometric-id', btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+      return true;
+    }catch(e){ return false; }
+  }
+  async function assertBiometric(){
+    const idB64 = localStorage.getItem('jeeru-biometric-id');
+    if(!idB64) return false;
+    try{
+      const rawId = Uint8Array.from(atob(idB64), c => c.charCodeAt(0));
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const assertion = await navigator.credentials.get({ publicKey: {
+        challenge, allowCredentials:[{ id: rawId, type:'public-key' }], userVerification:'required', timeout:60000
+      }});
+      return !!assertion;
+    }catch(e){ return false; }
+  }
+
+  function showAppLock(){
+    if(!ME) return; // nothing to protect before login
+    appIsLocked = true;
+    appLockPinInput.value = ''; appLockError.textContent = '';
+    document.body.classList.add('app-hidden');
+    appLockEl.classList.add('show');
+    appLockBiometricBtn.style.display = hasBiometricCredential() ? '' : 'none';
+    if(hasBiometricCredential()) setTimeout(tryBiometricUnlock, 250);
+    else setTimeout(() => appLockPinInput.focus(), 250);
+  }
+  function hideAppLock(){
+    appIsLocked = false;
+    appLockEl.classList.remove('show');
+    document.body.classList.remove('app-hidden');
+  }
+  async function tryBiometricUnlock(){
+    const ok = await assertBiometric();
+    if(ok) hideAppLock();
+  }
+  appLockBiometricBtn.addEventListener('click', tryBiometricUnlock);
+  async function attemptUnlock(){
+    const pin = appLockPinInput.value;
+    if(!pin){ appLockError.textContent = 'PIN daalo.'; return; }
+    appLockBtn.disabled = true;
+    try{
+      const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin }) });
+      if(!res.ok){ appLockError.textContent = 'Galat PIN.'; return; }
+      hideAppLock();
+    }catch(e){ appLockError.textContent = 'Connection issue, dobara try karo.'; }
+    finally{ appLockBtn.disabled = false; }
+  }
+  appLockBtn.addEventListener('click', attemptUnlock);
+  appLockPinInput.addEventListener('keydown', e => { if(e.key === 'Enter') attemptUnlock(); });
+
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){
+      hiddenAt = Date.now();
+      if(ME) document.body.classList.add('app-hidden'); // instant privacy blur, before the lock-timeout decision
+    } else {
+      if(ME && hiddenAt && (Date.now() - hiddenAt) > LOCK_TIMEOUT_MS){
+        showAppLock();
+      } else if(!appIsLocked){
+        document.body.classList.remove('app-hidden');
+      }
+    }
+  });
+
+  $('profBiometricBtn').addEventListener('click', async () => {
+    if(hasBiometricCredential()){
+      localStorage.removeItem('jeeru-biometric-id');
+      $('profBiometricBtn').querySelector('span').textContent = 'Enable Face/Touch ID unlock';
+      return;
+    }
+    const ok = await registerBiometric();
+    if(ok) $('profBiometricBtn').querySelector('span').textContent = 'Disable Face/Touch ID unlock';
+    else alert('Biometric setup didn\'t go through — your PIN still works as usual.');
+  });
+
+  // ======================================================================
+  // OFFLINE HANDLING
+  // ======================================================================
+  const offlineBanner = $('offlineBanner');
+  function updateOnlineStatus(){ offlineBanner.classList.toggle('show', !navigator.onLine); }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+
+  // ======================================================================
+  // SMALL-SCREEN KEYBOARD HANDLING — keep the input bar above the on-screen
+  // keyboard on mobile browsers where the layout viewport doesn't resize.
+  // ======================================================================
+  if(window.visualViewport){
+    const vv = window.visualViewport;
+    const onVV = () => {
+      const overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--kb-inset', overlap + 'px');
+    };
+    vv.addEventListener('resize', onVV);
+    vv.addEventListener('scroll', onVV);
+  }
+
+  // ======================================================================
+  // LAZY-LOAD helper for long feeds — renders only the first N items and
+  // reveals more on demand, so a feed with hundreds of photo-heavy cards
+  // doesn't build (and keep in memory) hundreds of DOM nodes at once.
+  // ======================================================================
+  function renderWindowed(containerEl, items, pageSize, renderItemFn){
+    containerEl.innerHTML = '';
+    let shown = 0;
+    function renderNextPage(){
+      const slice = items.slice(shown, shown + pageSize);
+      slice.forEach(item => containerEl.appendChild(renderItemFn(item)));
+      shown += slice.length;
+      const existingBtn = containerEl.parentElement.querySelector('.feed-load-more');
+      if(existingBtn) existingBtn.remove();
+      if(shown < items.length){
+        const btn = document.createElement('button');
+        btn.className = 'feed-load-more';
+        btn.textContent = 'Load more (' + (items.length - shown) + ')';
+        btn.addEventListener('click', renderNextPage);
+        containerEl.parentElement.appendChild(btn);
+      }
+    }
+    renderNextPage();
   }
 
   // ---- load each feature's data the first time its tab is opened ----
