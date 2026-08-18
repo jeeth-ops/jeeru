@@ -1222,6 +1222,131 @@
     background:var(--surface-elevated-light); color:var(--sub-light); font-weight:700; font-size:var(--fs-footnote); cursor:pointer;
   }
   body.dark .feed-load-more{ background:var(--surface-elevated-dark); border-color:var(--sep-dark); }
+  /* ================= PHOTOS ================= */
+  #photosGrid{
+    column-count:2; column-gap:var(--sp-3); padding:0 var(--sp-4) var(--sp-6);
+  }
+  .photo-tile{
+    break-inside:avoid; margin-bottom:var(--sp-3); border-radius:var(--r-lg); overflow:hidden; position:relative;
+    box-shadow:var(--shadow-1); border:0.5px solid var(--sep-light); background:var(--surface-elevated-light);
+    animation:riseIn .4s var(--spring) both; cursor:pointer; transition:transform var(--dur-fast) var(--spring);
+  }
+  body.dark .photo-tile{ background:var(--surface-elevated-dark); border-color:var(--sep-dark); }
+  .photo-tile:active{ transform:scale(0.96); }
+  .photo-tile img{ display:block; width:100%; height:auto; }
+  .photo-tile .pt-fav{
+    position:absolute; top:8px; right:8px; font-size:15px; width:26px; height:26px; border-radius:50%;
+    background:rgba(0,0,0,0.35); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center;
+    transition:transform var(--dur-fast) var(--spring);
+  }
+  .photo-tile .pt-fav.on{ animation:heartPop .4s var(--spring); }
+  @keyframes heartPop{ 0%{ transform:scale(1); } 40%{ transform:scale(1.4); } 100%{ transform:scale(1); } }
+  .photo-tile .pt-cap{
+    position:absolute; left:0; right:0; bottom:0; padding:16px 10px 8px; font-size:12px; color:#fff; font-weight:600;
+    background:linear-gradient(0deg, rgba(0,0,0,0.55), transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .photo-skel{
+    break-inside:avoid; margin-bottom:var(--sp-3); border-radius:var(--r-lg); background:var(--bubble-in-light);
+    animation:skelPulse 1.3s ease-in-out infinite;
+  }
+  body.dark .photo-skel{ background:var(--bubble-in-dark); }
+  @keyframes skelPulse{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+
+  /* Full-screen photo viewer: horizontal snap-scroll track, one photo per page */
+  #photoViewer{
+    position:fixed; inset:0; z-index:110; background:#000; display:none; flex-direction:column;
+  }
+  #photoViewer.show{ display:flex; animation:fadeIn .25s ease; }
+  #photoViewerTrack{
+    flex:1; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  #photoViewerTrack::-webkit-scrollbar{ display:none; }
+  .pv-page{
+    flex:0 0 100%; scroll-snap-align:center; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; touch-action:pan-y pinch-zoom;
+  }
+  .pv-page img, .pv-page video{
+    max-width:100%; max-height:100%; touch-action:none; transition:transform .25s var(--spring); will-change:transform;
+  }
+  .pv-btn{
+    position:absolute; z-index:2; width:38px; height:38px; border:none; color:#fff; font-size:16px;
+    background:rgba(255,255,255,0.14); backdrop-filter:blur(10px); top:calc(14px + env(safe-area-inset-top));
+  }
+  #photoViewerClose{ left:14px; }
+  #photoViewerDelete{ right:14px; }
+  #photoViewerFav{ right:60px; font-size:15px; }
+  #photoViewerFav.on{ color:#FF375F; background:rgba(255,55,95,0.22); }
+  #photoViewerInfo{
+    position:absolute; left:0; right:0; bottom:calc(18px + env(safe-area-inset-bottom)); text-align:center; color:#fff; pointer-events:none;
+  }
+  #photoViewerCaption{ font-size:14.5px; font-weight:600; padding:0 24px; }
+  #photoViewerDate{ font-size:12px; color:rgba(255,255,255,0.6); margin-top:2px; }
+
+  /* ================= REELS ================= */
+  #screen-reels{ position:relative; background:#000; }
+  #reelsFeed{
+    flex:1; overflow-y:auto; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; height:100%;
+  }
+  #reelsFeed::-webkit-scrollbar{ display:none; }
+  .reel-page{
+    height:100%; scroll-snap-align:start; scroll-snap-stop:always; position:relative; display:flex; align-items:center; justify-content:center;
+    background:#000; overflow:hidden;
+  }
+  .reel-page video{ width:100%; height:100%; object-fit:cover; }
+  .reel-progress{ position:absolute; top:calc(8px + env(safe-area-inset-top)); left:10px; right:10px; height:2.5px; border-radius:2px; background:rgba(255,255,255,0.25); overflow:hidden; z-index:2; }
+  .reel-progress-bar{ height:100%; width:0%; background:#fff; border-radius:2px; }
+  .reel-mute{
+    position:absolute; top:calc(16px + env(safe-area-inset-top)); right:14px; width:34px; height:34px; border-radius:50%; border:none;
+    background:rgba(255,255,255,0.16); backdrop-filter:blur(10px); color:#fff; font-size:15px; z-index:2;
+  }
+  .reel-side{ position:absolute; right:12px; bottom:calc(90px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; gap:18px; z-index:2; }
+  .reel-side-btn{ width:44px; height:44px; border-radius:50%; border:none; background:rgba(255,255,255,0.14); backdrop-filter:blur(10px); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; transition:transform var(--dur-fast) var(--spring); }
+  .reel-side-btn:active{ transform:scale(0.86); }
+  .reel-side-btn.on{ color:#FF375F; background:rgba(255,55,95,0.22); }
+  .reel-caption{
+    position:absolute; left:16px; right:80px; bottom:calc(28px + env(safe-area-inset-bottom)); color:#fff; z-index:2;
+  }
+  .reel-caption .rc-from{ font-size:13px; font-weight:700; margin-bottom:2px; }
+  .reel-caption .rc-text{ font-size:13.5px; opacity:.9; line-height:1.4; }
+  .reel-playpause{ position:absolute; inset:0; z-index:1; display:flex; align-items:center; justify-content:center; }
+  .reel-playpause .rp-icon{ font-size:44px; color:rgba(255,255,255,0.85); opacity:0; transition:opacity .2s ease; text-shadow:0 2px 10px rgba(0,0,0,0.4); }
+  .reel-playpause.show .rp-icon{ opacity:1; }
+  .reel-skel{ position:absolute; inset:0; background:linear-gradient(160deg,#1c1c1e,#000); animation:skelPulse 1.3s ease-in-out infinite; }
+
+  /* ================= SHARED: upload sheet ================= */
+  #mediaUploadSheet{
+    position:fixed; inset:0; z-index:120; background:rgba(0,0,0,0.45); display:none; align-items:flex-end; justify-content:center;
+  }
+  #mediaUploadSheet.show{ display:flex; animation:fadeIn .2s ease; }
+  #mediaUploadCard{
+    width:100%; max-width:560px; background:var(--bg-light); border-radius:var(--r-xl) var(--r-xl) 0 0;
+    padding:var(--sp-3) var(--sp-5) calc(var(--sp-6) + env(safe-area-inset-bottom)); animation:sheetUp .35s var(--spring);
+  }
+  body.dark #mediaUploadCard{ background:var(--bg-dark); }
+  @keyframes sheetUp{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+  #mediaUploadHandle{ width:36px; height:4px; border-radius:2px; background:var(--sep-light); margin:6px auto var(--sp-4); }
+  body.dark #mediaUploadHandle{ background:var(--sep-dark); }
+  #mediaUploadTitle{ font-size:var(--fs-title3); font-weight:800; margin-bottom:var(--sp-4); text-align:center; }
+  #mediaUploadPreviewWrap{
+    height:220px; border-radius:var(--r-lg); background:var(--bubble-in-light); display:flex; align-items:center; justify-content:center;
+    overflow:hidden; margin-bottom:var(--sp-3);
+  }
+  body.dark #mediaUploadPreviewWrap{ background:var(--bubble-in-dark); }
+  #mediaUploadPreviewEmpty{ color:var(--sub-light); font-size:var(--fs-subhead); }
+  #mediaUploadPreviewWrap img, #mediaUploadPreviewWrap video{ width:100%; height:100%; object-fit:cover; }
+  #mediaUploadCaption{
+    width:100%; padding:12px 14px; background:var(--bubble-in-light); font-size:var(--fs-body); margin-bottom:var(--sp-3); color:inherit;
+  }
+  body.dark #mediaUploadCaption{ background:var(--bubble-in-dark); }
+  #mediaUploadProgress{ display:flex; align-items:center; justify-content:center; gap:8px; padding:var(--sp-3); font-size:var(--fs-subhead); color:var(--sub-light); }
+  #mediaUploadActions{ display:flex; gap:var(--sp-3); }
+  .mu-btn{ flex:1; padding:13px; border-radius:var(--r-md); border:none; font-size:var(--fs-subhead); font-weight:700; cursor:pointer; transition:transform var(--dur-fast) var(--spring), opacity var(--dur-base) var(--ease); }
+  .mu-btn:active{ transform:scale(0.96); }
+  .mu-btn-secondary{ background:var(--surface-elevated-light); color:var(--text-light); border:0.5px solid var(--sep-light); }
+  body.dark .mu-btn-secondary{ background:var(--surface-elevated-dark); color:var(--text-dark); border-color:var(--sep-dark); }
+  .mu-btn-primary{ background:linear-gradient(160deg,#0A84FF,#5AC8FA); color:#fff; box-shadow:var(--shadow-blue); }
+  .mu-btn-primary:disabled{ opacity:.45; box-shadow:none; }
+  .mu-btn-ghost{ background:transparent; color:var(--sub-light); margin-top:var(--sp-2); width:100%; }
 </style>
 </head>
 <body>
@@ -1267,6 +1392,8 @@
     <button class="tab-btn" data-screen="calendar"><span class="tab-ic">📅</span><span class="tab-label">Calendar</span></button>
     <button class="tab-btn" data-screen="journal"><span class="tab-ic">✍️</span><span class="tab-label">Journal</span></button>
     <button class="tab-btn" data-screen="places"><span class="tab-ic">📍</span><span class="tab-label">Our Places</span></button>
+    <button class="tab-btn" data-screen="photos"><span class="tab-ic">🖼️</span><span class="tab-label">Photos</span></button>
+    <button class="tab-btn" data-screen="reels"><span class="tab-ic">🎞️</span><span class="tab-label">Reels</span></button>
     <button class="tab-btn" data-screen="quizzes"><span class="tab-ic">🧠</span><span class="tab-label">Quizzes</span></button>
     <button class="tab-btn" data-screen="profile"><span class="tab-ic">👤</span><span class="tab-label">Profile</span></button>
   </nav>
@@ -1479,6 +1606,43 @@
       <div id="placesTimeline"></div>
     </div>
   </div>
+
+  <div id="screen-photos" class="screen">
+    <div class="feed-scroll" id="photosScroll">
+      <div class="feed-header"><div class="feed-title"><span class="ft-ic">🖼️</span>Photos</div><button class="fab" id="photosFab">+</button></div>
+      <div id="photosGrid"></div>
+    </div>
+  </div>
+
+  <div id="screen-reels" class="screen">
+    <div id="reelsFeed"></div>
+    <button class="fab" id="reelsFab" style="position:absolute; right:var(--sp-4); bottom:calc(var(--sp-5) + env(safe-area-inset-bottom)); z-index:5;">+</button>
+  </div>
+
+  <div id="photoViewer">
+    <button id="photoViewerClose" class="btn-icon pv-btn" title="Close">✕</button>
+    <button id="photoViewerFav" class="btn-icon pv-btn pv-fav" title="Favorite">🤍</button>
+    <button id="photoViewerDelete" class="btn-icon pv-btn pv-del" title="Delete">🗑️</button>
+    <div id="photoViewerTrack"></div>
+    <div id="photoViewerInfo"><div id="photoViewerCaption"></div><div id="photoViewerDate"></div></div>
+  </div>
+
+  <div id="mediaUploadSheet">
+    <div id="mediaUploadCard">
+      <div id="mediaUploadHandle"></div>
+      <div id="mediaUploadTitle">Add Photo</div>
+      <div id="mediaUploadPreviewWrap"><div id="mediaUploadPreviewEmpty">Tap below to choose</div></div>
+      <input type="text" id="mediaUploadCaption" class="field" placeholder="Add a caption (optional)">
+      <div id="mediaUploadProgress" style="display:none;"><div class="spinner"></div><span>Uploading…</span></div>
+      <div id="mediaUploadActions">
+        <button id="mediaUploadPick" class="mu-btn mu-btn-secondary">Choose file</button>
+        <button id="mediaUploadSubmit" class="mu-btn mu-btn-primary" disabled>Share</button>
+      </div>
+      <button id="mediaUploadCancel" class="mu-btn mu-btn-ghost">Cancel</button>
+    </div>
+  </div>
+  <input type="file" id="photoUploadInput" accept="image/*" style="display:none;">
+  <input type="file" id="reelUploadInput" accept="video/*" style="display:none;">
 
   <div id="screen-quizzes" class="screen">
     <div class="feed-scroll" id="quizzesScroll">
@@ -1695,7 +1859,8 @@
   const tabbar = $('tabbar'), tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
   const screens = { home:$('screen-home'), chat:$('screen-chat'), moments:$('screen-moments'), memories:$('screen-memories'),
     surprises:$('screen-surprises'), gifts:$('screen-gifts'),
-    together:$('screen-together'), calendar:$('screen-calendar'), journal:$('screen-journal'), places:$('screen-places'), quizzes:$('screen-quizzes'), profile:$('screen-profile') };
+    together:$('screen-together'), calendar:$('screen-calendar'), journal:$('screen-journal'), places:$('screen-places'),
+    photos:$('screen-photos'), reels:$('screen-reels'), quizzes:$('screen-quizzes'), profile:$('screen-profile') };
   const homeAvatarMe = $('homeAvatarMe'), homeAvatarOther = $('homeAvatarOther'), coupleNames = $('coupleNames'), sinceDate = $('sinceDate');
   const daysTogetherNum = $('daysTogetherNum'), streakNum = $('streakNum'), dailyMsgText = $('dailyMsgText');
   const myMoodEmoji = $('myMoodEmoji'), myMoodWord = $('myMoodWord'), otherMoodEmoji = $('otherMoodEmoji'), otherMoodWord = $('otherMoodWord'), otherMoodLabel = $('otherMoodLabel');
@@ -1922,6 +2087,9 @@
     Object.keys(screens).forEach(k => screens[k].classList.toggle('active', k === name));
     tabBtns.forEach(b => b.classList.toggle('active', b.dataset.screen === name));
     if(name === 'home') refreshHome();
+    if(name === 'photos') renderPhotosScreen();
+    if(name === 'reels') renderReelsScreen();
+    else pauseAllReels();
   }
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => { vibrate(6); switchScreen(btn.dataset.screen); });
@@ -4585,6 +4753,353 @@
   // reveals more on demand, so a feed with hundreds of photo-heavy cards
   // doesn't build (and keep in memory) hundreds of DOM nodes at once.
   // ======================================================================
+  // ================= PHOTOS + REELS =================
+  let photosCache = null, reelsCache = null;
+  let photosGridEl = $('photosGrid'), reelsFeedEl = $('reelsFeed');
+  let photoViewerEl = $('photoViewer'), photoViewerTrack = $('photoViewerTrack'), photoViewerCaption = $('photoViewerCaption'), photoViewerDate = $('photoViewerDate');
+  let photoViewerClose = $('photoViewerClose'), photoViewerFav = $('photoViewerFav'), photoViewerDelete = $('photoViewerDelete');
+  let mediaUploadSheet = $('mediaUploadSheet'), mediaUploadCard = $('mediaUploadCard'), mediaUploadTitle = $('mediaUploadTitle');
+  let mediaUploadPreviewWrap = $('mediaUploadPreviewWrap'), mediaUploadCaption = $('mediaUploadCaption');
+  let mediaUploadPick = $('mediaUploadPick'), mediaUploadSubmit = $('mediaUploadSubmit'), mediaUploadCancel = $('mediaUploadCancel'), mediaUploadProgress = $('mediaUploadProgress');
+  let photoUploadInput = $('photoUploadInput'), reelUploadInput = $('reelUploadInput');
+  let uploadKind = 'photo'; // 'photo' | 'reel'
+  let uploadPendingData = null;
+  let viewerIndex = 0;
+
+  function fmtMediaDate(ts){
+    if(!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  function skeletonGrid(n, heights){
+    photosGridEl.innerHTML = '';
+    for(let i=0;i<n;i++){
+      const s = document.createElement('div');
+      s.className = 'photo-skel';
+      s.style.height = (heights[i % heights.length]) + 'px';
+      photosGridEl.appendChild(s);
+    }
+  }
+
+  // ---------- PHOTOS ----------
+  async function fetchPhotos(){
+    try{
+      const res = await apiFetch('/api/photos');
+      if(!res.ok) return [];
+      const j = await res.json();
+      return (j.items || []).slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    }catch(e){ return null; }
+  }
+
+  async function renderPhotosScreen(force){
+    if(photosCache && !force){ paintPhotosGrid(); return; }
+    if(!photosCache) skeletonGrid(6, [160,220,190,150,230,175]);
+    const items = await fetchPhotos();
+    if(items === null){ // network failure
+      photosGridEl.innerHTML = '<div class="empty-state"><div class="ph-ic">📡</div><div class="ph-title">Couldn\'t load photos</div><div class="ph-sub">Check your connection and pull to try again.</div></div>';
+      return;
+    }
+    photosCache = items;
+    paintPhotosGrid();
+  }
+
+  function paintPhotosGrid(){
+    photosGridEl.innerHTML = '';
+    if(!photosCache.length){
+      photosGridEl.innerHTML = '<div class="empty-state"><div class="ph-ic">🖼️</div><div class="ph-title">No photos yet</div><div class="ph-sub">Add your first photo together — tap the + above.</div></div>';
+      return;
+    }
+    photosCache.forEach((p, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'photo-tile';
+      const isFav = !!(p.saved && p.saved[ME]);
+      tile.innerHTML = `<img src="${p.mediaData}" loading="lazy" alt="">
+        <button class="pt-fav ${isFav ? 'on' : ''}">${isFav ? '❤️' : '🤍'}</button>
+        ${p.caption ? `<div class="pt-cap">${escapeHtml(p.caption)}</div>` : ''}`;
+      tile.querySelector('img').addEventListener('click', () => openPhotoViewer(i));
+      tile.querySelector('.pt-fav').addEventListener('click', async (e) => {
+        e.stopPropagation(); vibrate(8);
+        await toggleSave('photos', p);
+        paintPhotosGrid();
+      });
+      photosGridEl.appendChild(tile);
+    });
+  }
+
+  function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  async function toggleSave(route, item){
+    try{
+      const res = await apiFetch('/api/' + route + '/save', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id:item.id, who:ME })
+      });
+      if(res.ok){
+        const j = await res.json();
+        if(route === 'photos') photosCache = (j.items||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        if(route === 'reels') reelsCache = (j.items||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      }
+    }catch(e){}
+  }
+
+  async function deleteItem(route, item){
+    if(item.from !== ME) return; // author-only, mirrors server rule
+    try{
+      const res = await apiFetch('/api/' + route + '/delete', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id:item.id, who:ME })
+      });
+      if(res.ok){
+        const j = await res.json();
+        const sorted = (j.items||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        if(route === 'photos') photosCache = sorted;
+        if(route === 'reels') reelsCache = sorted;
+      }
+    }catch(e){}
+  }
+
+  // ---- full-screen photo viewer: swipeable track + double-tap zoom ----
+  function openPhotoViewer(index){
+    viewerIndex = index;
+    photoViewerTrack.innerHTML = '';
+    photosCache.forEach((p) => {
+      const page = document.createElement('div');
+      page.className = 'pv-page';
+      const img = document.createElement('img');
+      img.src = p.mediaData;
+      let lastTap = 0, zoomed = false;
+      img.addEventListener('click', () => {
+        const now = Date.now();
+        if(now - lastTap < 300){
+          zoomed = !zoomed;
+          img.style.transform = zoomed ? 'scale(2.1)' : 'scale(1)';
+          vibrate(10);
+        }
+        lastTap = now;
+      });
+      page.appendChild(img);
+      photoViewerTrack.appendChild(page);
+    });
+    photoViewerEl.classList.add('show');
+    requestAnimationFrame(() => {
+      photoViewerTrack.scrollLeft = index * photoViewerTrack.clientWidth;
+    });
+    photoViewerTrack.addEventListener('scroll', onViewerScroll);
+    updateViewerInfo();
+  }
+  function onViewerScroll(){
+    const w = photoViewerTrack.clientWidth || 1;
+    viewerIndex = Math.round(photoViewerTrack.scrollLeft / w);
+    updateViewerInfo();
+  }
+  function updateViewerInfo(){
+    const p = photosCache[viewerIndex];
+    if(!p) return;
+    photoViewerCaption.textContent = p.caption || '';
+    photoViewerDate.textContent = fmtMediaDate(p.createdAt);
+    const isFav = !!(p.saved && p.saved[ME]);
+    photoViewerFav.textContent = isFav ? '❤️' : '🤍';
+    photoViewerFav.classList.toggle('on', isFav);
+    photoViewerDelete.style.display = (p.from === ME) ? 'flex' : 'none';
+  }
+  function closePhotoViewer(){
+    photoViewerEl.classList.remove('show');
+    photoViewerTrack.removeEventListener('scroll', onViewerScroll);
+    photoViewerTrack.innerHTML = '';
+  }
+  photoViewerClose.addEventListener('click', () => { vibrate(6); closePhotoViewer(); });
+  photoViewerFav.addEventListener('click', async () => {
+    vibrate(10);
+    const p = photosCache[viewerIndex];
+    if(p){ await toggleSave('photos', p); updateViewerInfo(); paintPhotosGrid(); }
+  });
+  photoViewerDelete.addEventListener('click', async () => {
+    const p = photosCache[viewerIndex];
+    if(!p) return;
+    vibrate(14);
+    await deleteItem('photos', p);
+    closePhotoViewer();
+    paintPhotosGrid();
+  });
+
+  // ---------- REELS ----------
+  let reelsObserver = null;
+  async function fetchReels(){
+    try{
+      const res = await apiFetch('/api/reels');
+      if(!res.ok) return [];
+      const j = await res.json();
+      return (j.items || []).slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    }catch(e){ return null; }
+  }
+  let reelsMuted = true;
+
+  async function renderReelsScreen(force){
+    if(reelsCache && !force){ return; }
+    reelsFeedEl.innerHTML = '<div class="reel-page"><div class="reel-skel"></div></div>';
+    const items = await fetchReels();
+    if(items === null){
+      reelsFeedEl.innerHTML = '<div class="empty-state" style="color:#fff;"><div class="ph-ic">📡</div><div class="ph-title" style="color:#fff;">Couldn\'t load reels</div><div class="ph-sub">Check your connection and try again.</div></div>';
+      return;
+    }
+    reelsCache = items;
+    paintReelsFeed();
+  }
+
+  function paintReelsFeed(){
+    if(reelsObserver) reelsObserver.disconnect();
+    reelsFeedEl.innerHTML = '';
+    if(!reelsCache.length){
+      reelsFeedEl.innerHTML = '<div class="empty-state" style="color:#fff;"><div class="ph-ic">🎞️</div><div class="ph-title" style="color:#fff;">No reels yet</div><div class="ph-sub">Add your first reel together — tap the + below.</div></div>';
+      return;
+    }
+    reelsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const vid = entry.target.querySelector('video');
+        if(!vid) return;
+        if(entry.isIntersecting && entry.intersectionRatio > 0.6){
+          vid.play().catch(()=>{});
+        }else{
+          vid.pause();
+        }
+      });
+    }, { root: reelsFeedEl, threshold: [0, 0.6, 1] });
+
+    reelsCache.forEach((r) => {
+      const page = document.createElement('div');
+      page.className = 'reel-page';
+      const isFav = !!(r.saved && r.saved[ME]);
+      page.innerHTML = `
+        <div class="reel-progress"><div class="reel-progress-bar"></div></div>
+        <video src="${r.mediaData}" playsinline loop muted></video>
+        <div class="reel-playpause"><div class="rp-icon">▶️</div></div>
+        <button class="reel-mute">${reelsMuted ? '🔇' : '🔊'}</button>
+        <div class="reel-side">
+          <button class="reel-side-btn reel-fav ${isFav ? 'on' : ''}">${isFav ? '❤️' : '🤍'}</button>
+          ${r.from === ME ? '<button class="reel-side-btn reel-del">🗑️</button>' : ''}
+        </div>
+        <div class="reel-caption">
+          <div class="rc-from">${escapeHtml(r.from === ME ? 'You' : (MEMBERS[r.from] ? MEMBERS[r.from].name : r.from))}</div>
+          ${r.caption ? `<div class="rc-text">${escapeHtml(r.caption)}</div>` : ''}
+        </div>`;
+      const vid = page.querySelector('video');
+      const bar = page.querySelector('.reel-progress-bar');
+      const pp = page.querySelector('.reel-playpause');
+      vid.muted = reelsMuted;
+      vid.addEventListener('timeupdate', () => {
+        if(vid.duration) bar.style.width = ((vid.currentTime / vid.duration) * 100) + '%';
+      });
+      page.querySelector('.reel-playpause').addEventListener('click', () => {
+        if(vid.paused){ vid.play().catch(()=>{}); pp.classList.remove('show'); }
+        else{ vid.pause(); pp.querySelector('.rp-icon').textContent = '▶️'; pp.classList.add('show'); }
+        vibrate(6);
+      });
+      page.querySelector('.reel-mute').addEventListener('click', (e) => {
+        e.stopPropagation();
+        reelsMuted = !reelsMuted;
+        page.querySelectorAll('video').forEach(v => v.muted = reelsMuted);
+        e.currentTarget.textContent = reelsMuted ? '🔇' : '🔊';
+        vibrate(6);
+      });
+      page.querySelector('.reel-fav').addEventListener('click', async (e) => {
+        e.stopPropagation(); vibrate(8);
+        await toggleSave('reels', r);
+        const nr = reelsCache.find(x => x.id === r.id);
+        const on = !!(nr && nr.saved && nr.saved[ME]);
+        e.currentTarget.classList.toggle('on', on);
+        e.currentTarget.textContent = on ? '❤️' : '🤍';
+      });
+      const delBtn = page.querySelector('.reel-del');
+      if(delBtn) delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation(); vibrate(14);
+        await deleteItem('reels', r);
+        paintReelsFeed();
+      });
+      reelsFeedEl.appendChild(page);
+      reelsObserver.observe(page);
+    });
+  }
+
+  function pauseAllReels(){
+    reelsFeedEl.querySelectorAll('video').forEach(v => v.pause());
+  }
+
+  // ---------- Upload sheet (shared by Photos + Reels) ----------
+  function openUploadSheet(kind){
+    uploadKind = kind;
+    uploadPendingData = null;
+    mediaUploadTitle.textContent = kind === 'photo' ? 'Add Photo' : 'Add Reel';
+    mediaUploadPreviewWrap.innerHTML = '<div id="mediaUploadPreviewEmpty">Tap below to choose</div>';
+    mediaUploadCaption.value = '';
+    mediaUploadSubmit.disabled = true;
+    mediaUploadProgress.style.display = 'none';
+    mediaUploadSheet.classList.add('show');
+  }
+  function closeUploadSheet(){ mediaUploadSheet.classList.remove('show'); }
+  $('photosFab').addEventListener('click', () => { vibrate(8); openUploadSheet('photo'); });
+  $('reelsFab').addEventListener('click', () => { vibrate(8); openUploadSheet('reel'); });
+  mediaUploadCancel.addEventListener('click', () => { vibrate(6); closeUploadSheet(); });
+  mediaUploadSheet.addEventListener('click', (e) => { if(e.target === mediaUploadSheet) closeUploadSheet(); });
+  mediaUploadPick.addEventListener('click', () => {
+    (uploadKind === 'photo' ? photoUploadInput : reelUploadInput).click();
+  });
+
+  photoUploadInput.addEventListener('change', async () => {
+    const file = photoUploadInput.files[0];
+    photoUploadInput.value = '';
+    if(!file) return;
+    try{
+      uploadPendingData = await compressImage(file, 1600, 0.85);
+      mediaUploadPreviewWrap.innerHTML = `<img src="${uploadPendingData}">`;
+      mediaUploadSubmit.disabled = false;
+    }catch(e){ alert('Could not read that photo — try another one.'); }
+  });
+  reelUploadInput.addEventListener('change', async () => {
+    const file = reelUploadInput.files[0];
+    reelUploadInput.value = '';
+    if(!file) return;
+    if(file.size > 18 * 1024 * 1024){
+      alert('That video is a bit too large (max ~18MB). Try a shorter clip.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      uploadPendingData = reader.result;
+      mediaUploadPreviewWrap.innerHTML = `<video src="${uploadPendingData}" muted playsinline controls></video>`;
+      mediaUploadSubmit.disabled = false;
+    };
+    reader.onerror = () => alert('Could not read that video — try another one.');
+    reader.readAsDataURL(file);
+  });
+
+  mediaUploadSubmit.addEventListener('click', async () => {
+    if(!uploadPendingData) return;
+    mediaUploadSubmit.disabled = true;
+    mediaUploadProgress.style.display = 'flex';
+    const route = uploadKind === 'photo' ? 'photos' : 'reels';
+    const item = {
+      id: uid(), from: ME, mediaType: uploadKind === 'photo' ? 'image' : 'video',
+      mediaData: uploadPendingData, caption: mediaUploadCaption.value.trim(), createdAt: Date.now()
+    };
+    try{
+      const res = await apiFetch('/api/' + route, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ item })
+      });
+      if(!res.ok) throw new Error('upload failed');
+      const j = await res.json();
+      const sorted = (j.items||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      if(route === 'photos'){ photosCache = sorted; paintPhotosGrid(); }
+      else{ reelsCache = sorted; paintReelsFeed(); }
+      vibrate(16);
+      closeUploadSheet();
+    }catch(e){
+      mediaUploadProgress.style.display = 'none';
+      mediaUploadSubmit.disabled = false;
+      alert('Upload failed — check your connection and try again.');
+    }
+  });
+
   function renderWindowed(containerEl, items, pageSize, renderItemFn){
     containerEl.innerHTML = '';
     let shown = 0;
