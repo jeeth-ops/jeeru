@@ -1,8 +1,6 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
-const fs = require('fs');
-const multer = require('multer');
 const { MongoClient } = require('mongodb');
 
 const app = express();
@@ -113,60 +111,6 @@ app.use('/api', (req, res, next) => {
     return res.status(401).json({ error: 'unauthorized' });
   }
   next();
-});
-
-/**
- * ---------- Media storage: photos/videos saved as real files on D drive ----------
- * Instead of stuffing base64 into MongoDB (expensive, slow, and eats the
- * free-tier quota fast), the actual photo/video bytes are written straight
- * to disk here. Only a small JSON item (id, caption, and this file's URL)
- * ever goes into MongoDB — that's why the DB stays tiny no matter how many
- * photos/videos get added.
- */
-const MEDIA_ROOT = process.env.JEERU_MEDIA_DIR || 'D:/jeeru-storage';
-const MEDIA_DIRS = {
-  photos: path.join(MEDIA_ROOT, 'photos'),
-  videos: path.join(MEDIA_ROOT, 'videos')
-};
-Object.values(MEDIA_DIRS).forEach((dir) => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
-
-const mediaStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, file.mimetype.startsWith('video') ? MEDIA_DIRS.videos : MEDIA_DIRS.photos);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || '').slice(0, 10).replace(/[^a-zA-Z0-9.]/g, '');
-    cb(null, Date.now() + '-' + crypto.randomBytes(6).toString('hex') + ext);
-  }
-});
-// No fileSize/file-count limit — full-length photos and videos, no compression.
-const uploadMedia = multer({ storage: mediaStorage });
-
-// Serve the saved files back out. <img>/<video> tags can't send the
-// X-Jeeru-Key header, so the same shared key is accepted as ?key=... too —
-// this keeps the media folder from being openly world-readable.
-app.use('/media', (req, res, next) => {
-  const key = req.headers['x-jeeru-key'] || req.query.key;
-  if (!JEERU_KEY || !timingSafeStringEqual(key, JEERU_KEY)) return res.status(401).end();
-  next();
-}, express.static(MEDIA_ROOT, { dotfiles: 'deny' }));
-
-// Upload one or many photos/videos in a single request (multi-select from
-// the app). Runs through the same '/api' key gate registered above.
-// Files land on the D drive immediately; the response just lists their URLs.
-app.post('/api/media/upload', uploadMedia.array('files'), (req, res) => {
-  if (!req.files || !req.files.length) return res.status(400).json({ error: 'no files' });
-  const files = req.files.map((f) => {
-    const isVideo = f.mimetype.startsWith('video');
-    return {
-      mediaType: isVideo ? 'video' : 'image',
-      url: '/media/' + (isVideo ? 'videos' : 'photos') + '/' + f.filename,
-      size: f.size
-    };
-  });
-  res.json({ ok: true, files });
 });
 
 /**
