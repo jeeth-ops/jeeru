@@ -1676,8 +1676,8 @@
       <button id="mediaUploadCancel" class="mu-btn mu-btn-ghost">Cancel</button>
     </div>
   </div>
-  <input type="file" id="photoUploadInput" accept="image/*" multiple style="display:none;">
-  <input type="file" id="reelUploadInput" accept="video/*" multiple style="display:none;">
+  <input type="file" id="photoUploadInput" accept="image/*" style="display:none;">
+  <input type="file" id="reelUploadInput" accept="video/*" style="display:none;">
 
   <div id="screen-quizzes" class="screen">
     <div class="feed-scroll" id="quizzesScroll">
@@ -4799,7 +4799,7 @@
   let mediaUploadPick = $('mediaUploadPick'), mediaUploadSubmit = $('mediaUploadSubmit'), mediaUploadCancel = $('mediaUploadCancel'), mediaUploadProgress = $('mediaUploadProgress');
   let photoUploadInput = $('photoUploadInput'), reelUploadInput = $('reelUploadInput');
   let uploadKind = 'photo'; // 'photo' | 'reel'
-  let uploadPendingFiles = []; // raw File objects picked by the user (multi-select)
+  let uploadPendingData = null;
   let viewerIndex = 0;
 
   function fmtMediaDate(ts){
@@ -5102,9 +5102,8 @@
   // ---------- Upload sheet (shared by Photos + Reels) ----------
   function openUploadSheet(kind){
     uploadKind = kind;
-    uploadPendingFiles = [];
+    uploadPendingData = null;
     mediaUploadTitle.textContent = kind === 'photo' ? 'Add Photo' : 'Add Reel';
-    mediaUploadPreviewWrap.style.cssText = '';
     mediaUploadPreviewWrap.innerHTML = '<div id="mediaUploadPreviewEmpty">Tap below to choose</div>';
     mediaUploadCaption.value = '';
     mediaUploadSubmit.disabled = true;
@@ -5120,77 +5119,50 @@
     (uploadKind === 'photo' ? photoUploadInput : reelUploadInput).click();
   });
 
-  // No compression, no size/length limit — files are kept as-is and go
-  // straight to the D drive (see mediaUploadSubmit below). Multiple files
-  // can be picked at once since the inputs now have the `multiple` attribute.
-  photoUploadInput.addEventListener('change', () => {
-    const files = Array.from(photoUploadInput.files || []);
+  photoUploadInput.addEventListener('change', async () => {
+    const file = photoUploadInput.files[0];
     photoUploadInput.value = '';
-    if(!files.length) return;
-    uploadPendingFiles = files;
-    renderUploadPreview();
+    if(!file) return;
+    try{
+      uploadPendingData = await compressImage(file, 1600, 0.85);
+      mediaUploadPreviewWrap.innerHTML = `<img src="${uploadPendingData}">`;
+      mediaUploadSubmit.disabled = false;
+    }catch(e){ alert('Could not read that photo — try another one.'); }
   });
-  reelUploadInput.addEventListener('change', () => {
-    const files = Array.from(reelUploadInput.files || []);
+  reelUploadInput.addEventListener('change', async () => {
+    const file = reelUploadInput.files[0];
     reelUploadInput.value = '';
-    if(!files.length) return;
-    uploadPendingFiles = files;
-    renderUploadPreview();
-  });
-
-  // Shows a thumbnail strip for every picked file — works for 1 file or many.
-  function renderUploadPreview(){
-    if(!uploadPendingFiles.length){
-      mediaUploadPreviewWrap.style.cssText = '';
-      mediaUploadPreviewWrap.innerHTML = '<div id="mediaUploadPreviewEmpty">Tap below to choose</div>';
-      mediaUploadSubmit.disabled = true;
+    if(!file) return;
+    if(file.size > 18 * 1024 * 1024){
+      alert('That video is a bit too large (max ~18MB). Try a shorter clip.');
       return;
     }
-    mediaUploadPreviewWrap.style.cssText = 'display:flex;gap:6px;overflow-x:auto;';
-    mediaUploadPreviewWrap.innerHTML = uploadPendingFiles.map((f) => {
-      const url = URL.createObjectURL(f);
-      const thumbStyle = 'width:110px;height:110px;object-fit:cover;border-radius:10px;flex:none;';
-      return uploadKind === 'photo'
-        ? `<img src="${url}" style="${thumbStyle}">`
-        : `<video src="${url}" muted playsinline style="${thumbStyle}"></video>`;
-    }).join('');
-    mediaUploadSubmit.disabled = false;
-  }
+    const reader = new FileReader();
+    reader.onload = () => {
+      uploadPendingData = reader.result;
+      mediaUploadPreviewWrap.innerHTML = `<video src="${uploadPendingData}" muted playsinline controls></video>`;
+      mediaUploadSubmit.disabled = false;
+    };
+    reader.onerror = () => alert('Could not read that video — try another one.');
+    reader.readAsDataURL(file);
+  });
 
   mediaUploadSubmit.addEventListener('click', async () => {
-    if(!uploadPendingFiles.length) return;
+    if(!uploadPendingData) return;
     mediaUploadSubmit.disabled = true;
     mediaUploadProgress.style.display = 'flex';
     const route = uploadKind === 'photo' ? 'photos' : 'reels';
-    const mediaType = uploadKind === 'photo' ? 'image' : 'video';
-    const caption = mediaUploadCaption.value.trim();
+    const item = {
+      id: uid(), from: ME, mediaType: uploadKind === 'photo' ? 'image' : 'video',
+      mediaData: uploadPendingData, caption: mediaUploadCaption.value.trim(), createdAt: Date.now()
+    };
     try{
-      // 1) send the raw files as-is — server saves them straight to the D
-      //    drive (no base64, no compression, no size limit) and hands back
-      //    a URL for each one.
-      const formData = new FormData();
-      uploadPendingFiles.forEach((f) => formData.append('files', f));
-      const uploadRes = await apiFetch('/api/media/upload', { method:'POST', body: formData });
-      if(!uploadRes.ok) throw new Error('upload failed');
-      const uploadJson = await uploadRes.json();
-
-      // 2) one small item per file (just its URL, not its bytes) into the
-      //    existing photos/reels list — so a multi-select upload creates
-      //    one tile per photo/video, same as before.
-      let sorted = [];
-      for(const f of uploadJson.files){
-        const item = {
-          id: uid(), from: ME, mediaType,
-          mediaData: f.url + '?key=' + encodeURIComponent(JEERU_KEY),
-          caption, createdAt: Date.now()
-        };
-        const res = await apiFetch('/api/' + route, {
-          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ item })
-        });
-        if(!res.ok) throw new Error('save failed');
-        const j = await res.json();
-        sorted = (j.items||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-      }
+      const res = await apiFetch('/api/' + route, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ item })
+      });
+      if(!res.ok) throw new Error('upload failed');
+      const j = await res.json();
+      const sorted = (j.items||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
       if(route === 'photos'){ photosCache = sorted; paintPhotosGrid(); }
       else{ reelsCache = sorted; paintReelsGrid(); }
       vibrate(16);
